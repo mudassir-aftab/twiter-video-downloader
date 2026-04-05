@@ -107,24 +107,36 @@ DEFAULT_ADMIN = {
 # ============================================================================
 # STARTUP & SHUTDOWN EVENTS
 # ============================================================================
+def init_services():
+    # Redis
+    if not redis_client.health_check():
+        raise Exception("Redis connection failed")
+
+    # RabbitMQ
+    rabbitmq_publisher.initialize()
+
+def init_directories():
+    base = Path(__file__).parent
+    (base / "downloads").mkdir(exist_ok=True)
+    (base / "temp").mkdir(exist_ok=True)
+def init_background_jobs():
+    # Worker (IMPORTANT - uncomment this)
+    asyncio.create_task(run_worker())
+
+    # Cron jobs
+    start_cron_jobs(app)
 
 @app.on_event("startup")
 async def startup_event():
-    """Initialize connections on startup"""
-    logger.info("🚀 Starting FastAPI server...")
+    logger.info("🚀 Starting FastAPI system...")
+
     try:
-        # Verify Redis connection
-        if not redis_client.health_check():
-            raise Exception("Redis connection failed")
-        
-        # Initialize RabbitMQ publisher
-        await rabbitmq_publisher.initialize()
-        
-        # Create downloads directory
-        downloads_dir = Path(__file__).parent / "downloads"
-        downloads_dir.mkdir(exist_ok=True)
-        
-        logger.info("✅ All services initialized successfully")
+        init_services()
+        init_directories()
+        init_background_jobs()
+
+        logger.info("✅ System fully started")
+
     except Exception as e:
         logger.error(f"❌ Startup failed: {e}")
         raise
@@ -132,28 +144,6 @@ async def startup_event():
 
 
 
-
-
-@app.on_event("startup")
-async def startup_event():
-    logger.info("🚀 Starting FastAPI server...")
-
-    if not redis_client.health_check():
-        raise Exception("Redis failed")
-
-    await rabbitmq_publisher.initialize()
-
-    # Create downloads and temp directory
-    Path(__file__).parent.joinpath("downloads").mkdir(exist_ok=True)
-    Path(__file__).parent.joinpath("temp").mkdir(exist_ok=True)
-
-    # 🔥 START WORKER IN BACKGROUND
-    # asyncio.create_task(run_worker())
-    
-    # 🔥 START CRON JOBS
-    start_cron_jobs(app)
-
-    logger.info("✅ API + Worker + Cron started together")
 
 @app.on_event("shutdown")
 async def shutdown_event():
