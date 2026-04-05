@@ -7,6 +7,7 @@ import logging
 from typing import Callable, Optional
 from config import settings, get_rabbitmq_url
 from models import DownloadTask
+import ssl
 
 logger = logging.getLogger(__name__)
 
@@ -16,16 +17,23 @@ class RabbitMQClient:
     
     def __init__(self):
         """Initialize RabbitMQ client"""
-        self.connection: Optional[aio_pika.Connection] = None
+        self.connection: Optional[aio_pika.RobustConnection] = None
         self.channel: Optional[aio_pika.Channel] = None
         self.exchange: Optional[aio_pika.Exchange] = None
         self.queue: Optional[aio_pika.Queue] = None
     
     async def connect(self):
-        """Establish RabbitMQ connection"""
+        """Establish RabbitMQ connection using SSL if needed"""
         try:
             rabbitmq_url = get_rabbitmq_url()
-            self.connection = await aio_pika.connect_robust(rabbitmq_url)
+
+            # ✅ SSL context for AMQPS (required for port 5671)
+            ssl_context = ssl.create_default_context()
+
+            self.connection = await aio_pika.connect_robust(
+                rabbitmq_url,
+                ssl=ssl_context  # this fixes the connection unexpectedly closed error
+            )
             self.channel = await self.connection.channel()
             
             # Declare exchange
@@ -93,13 +101,9 @@ class RabbitMQClient:
                             # Call the callback function to process the task
                             await callback(task)
                             
-                            
-                            # Acknowledge message after successful processing
-                            # await message.ack()
                             logger.info(f"✅ Task {task.task_id} acknowledged")
                         except Exception as e:
                             logger.error(f"❌ Error processing task: {e}")
-                            # Reject and requeue on error
                             await message.nack(requeue=True)
         except Exception as e:
             logger.error(f"❌ Error consuming tasks: {e}")
@@ -110,20 +114,20 @@ class RabbitMQClient:
     async def close(self):
         """Close RabbitMQ connection"""
         try:
-            if self.connection:
+            if self.connection and not self.connection.is_closed:
                 await self.connection.close()
                 logger.info("✅ RabbitMQ connection closed")
         except Exception as e:
-            logger.error(f"Error closing RabbitMQ connection: {e}")
+            logger.error(f"❌ Error closing RabbitMQ connection: {e}")
     
     async def health_check(self) -> bool:
         """Check RabbitMQ connection health"""
         try:
-            if not self.connection or self.connection.is_closed():
+            if not self.connection or self.connection.is_closed:
                 await self.connect()
             return True
         except Exception as e:
-            logger.error(f"RabbitMQ health check failed: {e}")
+            logger.error(f"❌ RabbitMQ health check failed: {e}")
             return False
 
 
@@ -149,3 +153,4 @@ class RabbitMQPublisher:
 # Global instances
 rabbitmq_client = RabbitMQClient()
 rabbitmq_publisher = RabbitMQPublisher()
+
