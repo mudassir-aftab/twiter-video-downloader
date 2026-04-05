@@ -3,10 +3,11 @@ import time
 import logging
 from datetime import datetime
 from typing import Optional, Dict, Any, List
-from database import get_working_proxies, update_proxy_metrics, log_proxy_event
+from database import get_working_proxies, update_proxy_metrics as db_update_proxy_metrics, log_proxy_event as db_log_proxy_event
 from redis_client import redis_client
 
 logger = logging.getLogger(__name__)
+
 
 class ProxyManager:
     """
@@ -22,9 +23,6 @@ class ProxyManager:
     def get_best_proxy(self) -> Optional[Dict[str, Any]]:
         """
         Selects the best available proxy based on scoring and routing rules.
-        1. Always tries OXYLABS first.
-        2. Filter out proxies on cooldown via Redis.
-        3. Use weighted scoring system.
         """
         # Try to get from cache first
         proxies = redis_client.get_active_proxy_cache()
@@ -32,14 +30,14 @@ class ProxyManager:
             proxies = get_working_proxies()
             if proxies:
                 redis_client.set_active_proxy_cache(proxies)
-        
+
         if not proxies:
             logger.warning("No active proxies found in database.")
             return None
 
         # Filter out proxies on cooldown
         available_proxies = [p for p in proxies if not redis_client.is_proxy_on_cooldown(p['id'])]
-        
+
         if not available_proxies:
             logger.warning("All proxies are currently on cooldown. Falling back to all (forced reuse).")
             available_proxies = proxies
@@ -47,34 +45,27 @@ class ProxyManager:
         # Calculate scores
         scored_proxies = []
         for p in available_proxies:
-            # priority_weight: High (1) = 1.0, Medium (2) = 0.5, Low (3) = 0.0
-            # Fallback to 1.0 if not present
-            p_priority = p.get('priority_level', 1) 
+            p_priority = p.get('priority_level', 1)
             p_weight = 1.0 if p_priority == 1 else (0.5 if p_priority == 2 else 0.0)
-            
-            # Score formula: (S+1)/(F+1) - (RT * 0.01) + Weight
+
             s_count = p.get('success_count', 0) or 0
             f_count = p.get('fail_count', 0) or 0
             avg_rt = p.get('avg_response_time', 0) or 0
-            
+
             score = (s_count + 1) / (f_count + 1) - (avg_rt * 0.01) + p_weight
-            
-            # Add provider boost (Oxylabs priority)
+
             if p.get('provider_name') == 'OXYLABS':
                 score += 2.0
-                
+
             scored_proxies.append((score, p))
 
-        # Sort by score descending
         scored_proxies.sort(key=lambda x: x[0], reverse=True)
-        
-        # Pick the best one (or top 3 randomly to avoid extreme hot-spotting)
+
         best_p = scored_proxies[0][1] if scored_proxies else None
-        
+
         if best_p:
-            # Put on cooldown instantly to avoid duplicate usage in parallel tasks
             redis_client.set_proxy_cooldown(best_p['id'], self.cooldown_duration)
-            
+
         return best_p
 
     def format_proxy_url(self, proxy: Dict[str, Any]) -> str:
@@ -82,53 +73,52 @@ class ProxyManager:
         auth = ""
         if proxy.get('username') and proxy.get('password'):
             auth = f"{proxy['username']}:{proxy['password']}@"
-        
+
         return f"http://{auth}{proxy['host']}:{proxy['port']}"
-    
-    def update_proxy_metrics(proxy_id: str, success: bool, response_time: float, status: str):
-    try:
-        update_data = {
-            "last_used": datetime.utcnow().isoformat(),
-            "avg_response_time": response_time,
-        }
 
-        if success:
-            update_data["success_count"] = "success_count + 1"
-        else:
-            update_data["fail_count"] = "fail_count + 1"
-            update_data["status"] = status
+    def update_proxy_metrics(self, proxy_id: str, success: bool, response_time: float, status: str):
+        """Updates proxy metrics in the database"""
+        try:
+            update_data = {
+                "last_used": datetime.utcnow().isoformat(),
+                "avg_response_time": response_time,
+            }
 
-        get_supabase().table("proxies").update(update_data).eq("id", proxy_id).execute()
+            if success:
+                update_data["success_count"] = "success_count + 1"
+            else:
+                update_data["fail_count"] = "fail_count + 1"
+                update_data["status"] = status
 
-    except Exception as e:
-        logger.error(f"Error updating proxy metrics: {e}")
-    
-    def log_proxy_event(proxy_id: str, provider: str, url: str, status: str, response_time: float, error: str = None):
-    try:
-        data = {
-            "proxy_id": proxy_id,
-            "provider": provider,
-            "url": url,
-            "status": status,
-            "response_time": response_time,
-            "error": error,
-            "created_at": datetime.utcnow().isoformat()
-        }
+            db_update_proxy_metrics(proxy_id, update_data)
 
-        get_supabase().table("proxy_logs").insert(data).execute()
+        except Exception as e:
+            logger.error(f"Error updating proxy metrics: {e}")
 
-    except Exception as e:
-        logger.error(f"Error logging proxy event: {e}")
+    def log_proxy_event(self, proxy_id: str, provider: str, url: str, status: str, response_time: float, error: str = None):
+        """Logs a proxy event in the database"""
+        try:
+            data = {
+                "proxy_id": proxy_id,
+                "provider": provider,
+                "url": url,
+                "status": status,
+                "response_time": response_time,
+                "error": error,
+                "created_at": datetime.utcnow().isoformat()
+            }
+
+            db_log_proxy_event(data)
+
+        except Exception as e:
+            logger.error(f"Error logging proxy event: {e}")
 
     async def report_result(self, proxy: Dict[str, Any], url: str, success: bool, response_time: float, error: str = None):
         """Logs the result of a proxy usage and updates metrics"""
         status = "success" if success else ("banned" if "429" in str(error) or "403" in str(error) else "fail")
-        
-        # 1. Update DB metrics
-        update_proxy_metrics(proxy['id'], success, response_time, status if not success else "active")
-        
-        # 2. Log event
-        log_proxy_event(
+
+        self.update_proxy_metrics(proxy['id'], success, response_time, status if not success else "active")
+        self.log_proxy_event(
             proxy_id=proxy['id'],
             provider=proxy['provider_name'],
             url=url,
@@ -136,25 +126,19 @@ class ProxyManager:
             response_time=response_time,
             error=error
         )
-        
-        # 3. Self-healing logic
-        if not success:
-            # If fail count is high and success rate is low, could auto-disable here
-            # For now, we rely on the scoring system to naturally deprioritize it
-            pass
 
     async def test_proxy(self, proxy: Dict[str, Any]) -> Dict[str, Any]:
-        """Test a specific proxy via ipify and return detailed diagnostics"""
+        """Test a specific proxy via ipify and return diagnostics"""
         proxy_url = self.format_proxy_url(proxy)
         test_target = "https://api.ipify.org?format=json"
         start_time = time.time()
-        
+
         try:
             import httpx
             async with httpx.AsyncClient(proxies=proxy_url, timeout=12.0) as client:
                 resp = await client.get(test_target)
-                duration = (time.time() - start_time) * 1000 # ms
-                
+                duration = (time.time() - start_time) * 1000  # ms
+
                 if resp.status_code == 200:
                     ip_data = resp.json()
                     return {
@@ -169,7 +153,7 @@ class ProxyManager:
                     }
                 else:
                     return {
-                        "success": False, 
+                        "success": False,
                         "status": "error",
                         "status_code": resp.status_code,
                         "error": f"HTTP {resp.status_code}",
@@ -179,12 +163,13 @@ class ProxyManager:
         except Exception as e:
             duration = (time.time() - start_time) * 1000
             return {
-                "success": False, 
+                "success": False,
                 "status": "dead",
-                "error": str(e), 
+                "error": str(e),
                 "latency": f"{duration:.0f}ms",
                 "target": test_target
             }
+
 
 # Global instance
 proxy_manager = ProxyManager()
