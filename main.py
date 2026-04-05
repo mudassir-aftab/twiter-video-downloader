@@ -786,7 +786,3 @@ async def test_proxy(request: Request, admin: dict = Depends(get_current_admin))
 # ============================================================================
 
 
-
-if __name__ == "__main__":
-    port = int(os.environ.get("PORT", 5000))  # Railway ka port
-    uvicorn.run(app, host="0.0.0.0", port=port)
