@@ -785,35 +785,10 @@ async def test_proxy(request: Request, admin: dict = Depends(get_current_admin))
 # ROOT ENDPOINT
 # ============================================================================
 
-@app.get("/")
-async def root():
-    """API documentation"""
-    return {
-        "name": "Twitter/X Video Downloader API",
-        "version": "2.0.0",
-        "status": "running",
-        "architecture": "Redis + RabbitMQ + Workers",
-        "endpoints": {
-            "health": "GET /health",
-            "video_info": "POST /api/v1/info?url=<twitter_url>",
-            "download": "POST /api/v1/download",
-            "status": "GET /api/v1/status/<task_id>",
-            "cancel": "POST /api/v1/cancel/<task_id>",
-            "file_download": "GET /api/v1/download/<task_id>",
-            "active_tasks": "GET /api/v1/tasks",
-            "admin_login": "GET /admin/login",
-            "admin_dashboard": "GET /admin/dashboard",
-            "admin_tasks": "GET /admin/tasks",
-            "admin_proxies_list": "GET /admin/proxies/list",
-            "admin_proxies_add": "POST /admin/proxies/add",
-            "admin_proxies_delete": "POST /admin/proxies/delete",
-            "admin_proxies_test": "POST /admin/proxies/test"
-        }
-    }
-
 
 
 if __name__ == "__main__":
     import uvicorn
-    uvicorn.run(app, host="0.0.0.0", port=5000)
+    port = int(os.environ.get("PORT", 5000))
+    uvicorn.run(app, host="0.0.0.0", port=port)
 
