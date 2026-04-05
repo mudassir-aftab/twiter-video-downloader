@@ -84,6 +84,41 @@ class ProxyManager:
             auth = f"{proxy['username']}:{proxy['password']}@"
         
         return f"http://{auth}{proxy['host']}:{proxy['port']}"
+    
+    def update_proxy_metrics(proxy_id: str, success: bool, response_time: float, status: str):
+    try:
+        update_data = {
+            "last_used": datetime.utcnow().isoformat(),
+            "avg_response_time": response_time,
+        }
+
+        if success:
+            update_data["success_count"] = "success_count + 1"
+        else:
+            update_data["fail_count"] = "fail_count + 1"
+            update_data["status"] = status
+
+        get_supabase().table("proxies").update(update_data).eq("id", proxy_id).execute()
+
+    except Exception as e:
+        logger.error(f"Error updating proxy metrics: {e}")
+    
+    def log_proxy_event(proxy_id: str, provider: str, url: str, status: str, response_time: float, error: str = None):
+    try:
+        data = {
+            "proxy_id": proxy_id,
+            "provider": provider,
+            "url": url,
+            "status": status,
+            "response_time": response_time,
+            "error": error,
+            "created_at": datetime.utcnow().isoformat()
+        }
+
+        get_supabase().table("proxy_logs").insert(data).execute()
+
+    except Exception as e:
+        logger.error(f"Error logging proxy event: {e}")
 
     async def report_result(self, proxy: Dict[str, Any], url: str, success: bool, response_time: float, error: str = None):
         """Logs the result of a proxy usage and updates metrics"""
