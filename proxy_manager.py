@@ -113,6 +113,7 @@ class ProxyManager:
         except Exception as e:
             logger.error(f"Error logging proxy event: {e}")
 
+    
     async def report_result(self, proxy: Dict[str, Any], url: str, success: bool, response_time: float, error: str = None):
         """Logs the result of a proxy usage and updates metrics"""
         status = "success" if success else ("banned" if "429" in str(error) or "403" in str(error) else "fail")
@@ -169,6 +170,26 @@ class ProxyManager:
                 "latency": f"{duration:.0f}ms",
                 "target": test_target
             }
+
+    # database.py
+
+def update_proxy_metrics(proxy_id: str, update_data: dict):
+    """Update proxy metrics in the proxies table"""
+    try:
+        get_supabase().table("proxies").update(update_data).eq("id", proxy_id).execute()
+        return True
+    except Exception as e:
+        logger.error(f"Error updating proxy metrics: {e}")
+        return False
+
+def log_proxy_event(event_data: dict):
+    """Log a proxy event in the proxy_events table"""
+    try:
+        get_supabase().table("proxy_events").insert(event_data).execute()
+        return True
+    except Exception as e:
+        logger.error(f"Error logging proxy event: {e}")
+        return False
 
 
 # Global instance

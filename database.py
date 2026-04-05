@@ -107,9 +107,50 @@ def get_system_settings():
         return {}
 
 def is_blocked(block_type: str, block_value: str) -> bool:
+
     try:
         res = get_supabase().table("security_blocks").select("*").eq("block_type", block_type).eq("block_value", block_value).execute()
         return len(res.data) > 0
     except Exception as e:
         logger.error(f"Error checking security blocks: {e}")
         return False
+
+
+# --- Proxy Metrics & Events ---
+
+def update_proxy_metrics(proxy_id: str, update_data: dict):
+    """Update proxy metrics in the proxies table"""
+    try:
+        get_supabase().table("proxies").update(update_data).eq("id", proxy_id).execute()
+        return True
+    except Exception as e:
+        logger.error(f"Error updating proxy metrics: {e}")
+        return False
+
+def log_proxy_event(event_data: dict):
+    """Log a proxy event in the proxy_events table"""
+    try:
+        get_supabase().table("proxy_events").insert(event_data).execute()
+        return True
+    except Exception as e:
+        logger.error(f"Error logging proxy event: {e}")
+        return False
+
+
+def add_advanced_proxy(ip: str, port: int, username: str = None, password: str = None, provider: str = None, priority_level: int = 1, status: str = "active"):
+    """Add a proxy with extra fields like provider and priority"""
+    try:
+        data = {
+            "ip": ip,
+            "port": port,
+            "username": username,
+            "password": password,
+            "provider_name": provider,
+            "priority_level": priority_level,
+            "status": status
+        }
+        res = get_supabase().table("proxies").insert(data).execute()
+        return res.data
+    except Exception as e:
+        logger.error(f"Error adding advanced proxy: {e}")
+        return None
