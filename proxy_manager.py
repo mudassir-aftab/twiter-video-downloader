@@ -3,102 +3,179 @@ import time
 import logging
 from datetime import datetime
 from typing import Optional, Dict, Any, List
-from database import get_working_proxies, update_proxy_metrics as db_update_proxy_metrics, log_proxy_event as db_log_proxy_event
+
+import httpx
+
+from database import (
+    get_working_proxies,
+    update_proxy_metrics as db_update_proxy_metrics,
+    log_proxy_event as db_log_proxy_event,
+    get_supabase
+)
+
 from redis_client import redis_client
 
 logger = logging.getLogger(__name__)
 
 
 class ProxyManager:
-    """
-    High-Scale Intelligent Proxy Management System
-    Handles multi-provider routing, scoring, and self-healing.
-    """
 
     def __init__(self):
-        self.cooldown_duration = 30  # Default cooldown in seconds
-        self.retry_limit = 5
-        self.fail_threshold = 10     # Auto-disable after 10 fails if success rate is low
+        self.cooldown_duration = 30
+        self.retry_limit = 3
 
+    # -----------------------------
+    # GET BEST PROXY
+    # -----------------------------
     def get_best_proxy(self) -> Optional[Dict[str, Any]]:
-        """
-        Selects the best available proxy based on scoring and routing rules.
-        """
-        # Try to get from cache first
-        proxies = redis_client.get_active_proxy_cache()
-        if not proxies:
-            proxies = get_working_proxies()
-            if proxies:
-                redis_client.set_active_proxy_cache(proxies)
+        try:
+            # 1. Redis cache
+            proxies = redis_client.get_active_proxy_cache()
 
-        if not proxies:
-            logger.warning("No active proxies found in database.")
+            # 2. DB fallback
+            if not proxies:
+                proxies = get_working_proxies()
+                if proxies:
+                    redis_client.set_active_proxy_cache(proxies)
+
+            if not proxies:
+                logger.warning("⚠️ No proxies found → using DIRECT mode")
+                return None
+
+            # 3. filter cooldown + dead
+            available = []
+            for p in proxies:
+                if not p:
+                    continue
+
+                if p.get("status", "").lower() in ["dead", "banned"]:
+                    continue
+
+                if redis_client.is_proxy_on_cooldown(p.get("id")):
+                    continue
+
+                available.append(p)
+
+            if not available:
+                available = proxies  # fallback
+
+            # 4. scoring system (stable version)
+            scored = []
+
+            for p in available:
+                success = p.get("success_count") or 0
+                fail = p.get("fail_count") or 0
+                speed = p.get("avg_response_time") or 0
+
+                # avoid divide crash + stabilize score
+                score = (success + 1) * 2 - (fail * 2) - (speed * 0.01)
+
+                scored.append((score, p))
+
+            scored.sort(key=lambda x: x[0], reverse=True)
+
+            best = scored[0][1] if scored else None
+
+            if best:
+                redis_client.set_proxy_cooldown(best["id"], self.cooldown_duration)
+
+            return best
+
+        except Exception as e:
+            logger.error(f"Proxy selection error: {e}")
             return None
 
-        # Filter out proxies on cooldown
-        available_proxies = [p for p in proxies if not redis_client.is_proxy_on_cooldown(p['id'])]
-
-        if not available_proxies:
-            logger.warning("All proxies are currently on cooldown. Falling back to all (forced reuse).")
-            available_proxies = proxies
-
-        # Calculate scores
-        scored_proxies = []
-        for p in available_proxies:
-            p_priority = p.get('priority_level', 1)
-            p_weight = 1.0 if p_priority == 1 else (0.5 if p_priority == 2 else 0.0)
-
-            s_count = p.get('success_count', 0) or 0
-            f_count = p.get('fail_count', 0) or 0
-            avg_rt = p.get('avg_response_time', 0) or 0
-
-            score = (s_count + 1) / (f_count + 1) - (avg_rt * 0.01) + p_weight
-
-            if p.get('provider_name') == 'OXYLABS':
-                score += 2.0
-
-            scored_proxies.append((score, p))
-
-        scored_proxies.sort(key=lambda x: x[0], reverse=True)
-
-        best_p = scored_proxies[0][1] if scored_proxies else None
-
-        if best_p:
-            redis_client.set_proxy_cooldown(best_p['id'], self.cooldown_duration)
-
-        return best_p
-
-    def format_proxy_url(self, proxy: Dict[str, Any]) -> str:
-        """Converts proxy dict to standard URI format"""
-        auth = ""
-        if proxy.get('username') and proxy.get('password'):
-            auth = f"{proxy['username']}:{proxy['password']}@"
-
-        return f"http://{auth}{proxy['host']}:{proxy['port']}"
-
-    def update_proxy_metrics(self, proxy_id: str, success: bool, response_time: float, status: str):
-        """Updates proxy metrics in the database"""
+    # -----------------------------
+    # FORMAT PROXY URL
+    # -----------------------------
+    def format_proxy_url(self, proxy: Dict[str, Any]) -> Optional[str]:
         try:
+            if not proxy:
+                return None
+
+            auth = ""
+            if proxy.get("username") and proxy.get("password"):
+                auth = f"{proxy['username']}:{proxy['password']}@"
+
+            ip = (
+                proxy.get("ip")
+                or proxy.get("proxy_ip")
+                or proxy.get("host")
+            )
+
+            port = proxy.get("port")
+
+            if not ip or not port:
+                return None
+
+            return f"http://{auth}{ip}:{port}"
+
+        except Exception as e:
+            logger.error(f"Proxy format error: {e}")
+            return None
+
+    # -----------------------------
+    # UPDATE METRICS (SAFE + SMOOTHING)
+    # -----------------------------
+    def update_proxy_metrics(
+        self,
+        proxy_id: str,
+        success: bool,
+        response_time: float,
+        status: str = "active"
+    ):
+        try:
+            supabase = get_supabase()
+
+            data = supabase.table("proxies") \
+                .select("success_count, fail_count, avg_response_time") \
+                .eq("id", proxy_id) \
+                .single() \
+                .execute() \
+                .data
+
+            data = data or {}
+
+            success_count = data.get("success_count") or 0
+            fail_count = data.get("fail_count") or 0
+            old_avg = data.get("avg_response_time") or 0
+
+            # exponential moving average (IMPORTANT FIX)
+            new_avg = (
+                (old_avg * 0.7) + (response_time * 0.3)
+                if old_avg else response_time
+            )
+
             update_data = {
-                "last_used": datetime.utcnow().isoformat(),
-                "avg_response_time": response_time,
+                "avg_response_time": new_avg,
+                "last_used_at": datetime.utcnow().isoformat(),
+                "status": status
             }
 
             if success:
-                update_data["success_count"] = "success_count + 1"
+                update_data["success_count"] = success_count + 1
             else:
-                update_data["fail_count"] = "fail_count + 1"
-                update_data["status"] = status
+                update_data["fail_count"] = fail_count + 1
 
             db_update_proxy_metrics(proxy_id, update_data)
 
         except Exception as e:
-            logger.error(f"Error updating proxy metrics: {e}")
+            logger.error(f"Metrics update error: {e}")
 
-    def log_proxy_event(self, proxy_id: str, provider: str, url: str, status: str, response_time: float, error: str = None):
-        """Logs a proxy event in the database"""
+    # -----------------------------
+    # LOG EVENT
+    # -----------------------------
+    def log_proxy_event(
+        self,
+        proxy_id: str,
+        provider: str,
+        url: str,
+        status: str,
+        response_time: float,
+        error: str = None
+    ):
         try:
-            data = {
+            db_log_proxy_event({
                 "proxy_id": proxy_id,
                 "provider": provider,
                 "url": url,
@@ -106,91 +183,98 @@ class ProxyManager:
                 "response_time": response_time,
                 "error": error,
                 "created_at": datetime.utcnow().isoformat()
-            }
-
-            db_log_proxy_event(data)
+            })
 
         except Exception as e:
-            logger.error(f"Error logging proxy event: {e}")
+            logger.error(f"Proxy event log error: {e}")
 
-    
-    async def report_result(self, proxy: Dict[str, Any], url: str, success: bool, response_time: float, error: str = None):
-        """Logs the result of a proxy usage and updates metrics"""
-        status = "success" if success else ("banned" if "429" in str(error) or "403" in str(error) else "fail")
+    # -----------------------------
+    # REPORT RESULT (MAIN FLOW)
+    # -----------------------------
+    async def report_result(
+        self,
+        proxy: Dict[str, Any],
+        url: str,
+        success: bool,
+        response_time: float,
+        error: str = None
+    ):
+        try:
+            if not proxy:
+                return
 
-        self.update_proxy_metrics(proxy['id'], success, response_time, status if not success else "active")
-        self.log_proxy_event(
-            proxy_id=proxy['id'],
-            provider=proxy['provider_name'],
-            url=url,
-            status=status,
-            response_time=response_time,
-            error=error
-        )
+            # detect ban
+            status = "success"
 
+            if not success:
+                if error and ("429" in str(error) or "403" in str(error) or "402" in str(error)):
+                    status = "banned"
+                else:
+                    status = "fail"
+
+            self.update_proxy_metrics(
+                proxy_id=proxy["id"],
+                success=success,
+                response_time=response_time,
+                status="active" if success else status
+            )
+
+            self.log_proxy_event(
+                proxy_id=proxy["id"],
+                provider=proxy.get("provider_name", "STATIC"),
+                url=url,
+                status=status,
+                response_time=response_time,
+                error=error
+            )
+
+        except Exception as e:
+            logger.error(f"Report result error: {e}")
+
+    # -----------------------------
+    # TEST PROXY (FIXED httpx)
+    # -----------------------------
     async def test_proxy(self, proxy: Dict[str, Any]) -> Dict[str, Any]:
-        """Test a specific proxy via ipify and return diagnostics"""
         proxy_url = self.format_proxy_url(proxy)
-        test_target = "https://api.ipify.org?format=json"
-        start_time = time.time()
+        test_url = "https://api.ipify.org?format=json"
+
+        start = time.time()
 
         try:
-            import httpx
-            async with httpx.AsyncClient(proxies=proxy_url, timeout=12.0) as client:
-                resp = await client.get(test_target)
-                duration = (time.time() - start_time) * 1000  # ms
+            # FIX: httpx proxy format (new correct way)
+            async with httpx.AsyncClient(
+                proxies={
+                    "http://": proxy_url,
+                    "https://": proxy_url
+                } if proxy_url else None,
+                timeout=10.0
+            ) as client:
 
-                if resp.status_code == 200:
-                    ip_data = resp.json()
-                    return {
-                        "success": True,
-                        "status": "active",
-                        "status_code": resp.status_code,
-                        "ip": ip_data.get("ip"),
-                        "latency": f"{duration:.0f}ms",
-                        "provider": proxy.get('provider_name', 'STATIC'),
-                        "target": test_target,
-                        "timestamp": datetime.now().isoformat()
-                    }
-                else:
-                    return {
-                        "success": False,
-                        "status": "error",
-                        "status_code": resp.status_code,
-                        "error": f"HTTP {resp.status_code}",
-                        "latency": f"{duration:.0f}ms",
-                        "target": test_target
-                    }
+                r = await client.get(test_url)
+
+            duration = (time.time() - start) * 1000
+
+            if r.status_code == 200:
+                return {
+                    "success": True,
+                    "status": "active",
+                    "ip": r.json().get("ip"),
+                    "latency": f"{duration:.0f}ms"
+                }
+
+            return {
+                "success": False,
+                "status": "failed",
+                "error": f"HTTP {r.status_code}"
+            }
+
         except Exception as e:
-            duration = (time.time() - start_time) * 1000
             return {
                 "success": False,
                 "status": "dead",
-                "error": str(e),
-                "latency": f"{duration:.0f}ms",
-                "target": test_target
+                "error": str(e)
             }
 
-    # database.py
 
-def update_proxy_metrics(proxy_id: str, update_data: dict):
-    """Update proxy metrics in the proxies table"""
-    try:
-        get_supabase().table("proxies").update(update_data).eq("id", proxy_id).execute()
-        return True
-    except Exception as e:
-        logger.error(f"Error updating proxy metrics: {e}")
-        return False
-
-def log_proxy_event(event_data: dict):
-    """Log a proxy event in the proxy_events table"""
-    try:
-        get_supabase().table("proxy_events").insert(event_data).execute()
-        return True
-    except Exception as e:
-        logger.error(f"Error logging proxy event: {e}")
-        return False
-
-
-# Global instance
+# GLOBAL INSTANCE
 proxy_manager = ProxyManager()

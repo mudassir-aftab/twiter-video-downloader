@@ -79,7 +79,7 @@ class RedisClient:
         except Exception as e:
             logger.error(f"Error updating task progress: {e}")
 
-    def mark_task_completed(self, task_id: str, filename: str, download_url: str):
+    def mark_task_completed(self, task_id: str, filename: str, download_url: str, file_path: str = None):
         """Mark task as completed"""
         try:
             task_state = self.get_task_state(task_id)
@@ -87,10 +87,11 @@ class RedisClient:
                 task_state["status"] = TaskStatus.COMPLETED
                 task_state["progress"] = 100
                 task_state["filename"] = filename
+                task_state["file_path"] = file_path or filename  # Store full path if available
                 task_state["download_url"] = download_url
                 task_state["message"] = "Download completed"
                 self.set_task_state(task_id, task_state)
-                logger.info(f"Task {task_id} marked as completed")
+                logger.info(f"Task {task_id} marked as completed: {filename}")
         except Exception as e:
             logger.error(f"Error marking task completed: {e}")
 
@@ -152,16 +153,24 @@ class RedisClient:
         except Exception as e:
             logger.error(f"Error deleting task: {e}")
 
-    def get_active_tasks(self) -> Dict[str, Dict]:
+    def get_active_tasks(self, include_completed: bool = False) -> Dict[str, Dict]:
         try:
             pattern = "task:*"
             keys = self.client.keys(pattern)
             tasks = {}
             for key in keys:
                 value = self.client.get(key)
-                if value:
-                    task_id = key.replace("task:", "")
-                    tasks[task_id] = json.loads(value)
+                if not value:
+                    continue
+
+                task_id = key.replace("task:", "")
+                task_state = json.loads(value)
+                status = task_state.get("status", "")
+
+                if not include_completed and status not in [TaskStatus.PENDING, TaskStatus.PROCESSING]:
+                    continue
+
+                tasks[task_id] = task_state
             return tasks
         except Exception as e:
             logger.error(f"Error retrieving active tasks: {e}")

@@ -456,21 +456,27 @@ class TwitterDownloader:
                 await proxy_manager.report_result(proxy_obj, url, success=True, response_time=duration)
 
                 # Use shared downloads directory from config
-                downloads_dir = Path(settings.downloads_dir)
+                downloads_dir = Path(settings.downloads_dir).resolve()
+                downloads_dir.mkdir(parents=True, exist_ok=True)  # Ensure it exists
                 dest_path = downloads_dir / Path(final_file).name
+                
+                logger.info(f"Moving file from {final_file} to {dest_path}")
                 
                 if os.path.exists(final_file):
                     shutil.move(str(final_file), str(dest_path))
+                    logger.info(f"File successfully moved to {dest_path}")
                 elif not os.path.exists(dest_path):
                     # If final_file doesn't exist, it might already be in dest_path
                     raise Exception(f"Final file {final_file} not found after download")
-                
+                else:
+                    logger.info(f"File already at destination: {dest_path}")
+                file_path = str(dest_path.resolve())
                 # Cache metadata
                 video_info = {
                     "video_id": video_id,
                     "title": info.get("title", ""),
                     "duration": info.get("duration", 0),
-                    "download_path": str(dest_path),
+                    "download_path": file_path,
                     "cached_at": datetime.now().isoformat()
                 }
                 redis_client.cache_video_info(video_id, video_info)
@@ -531,18 +537,24 @@ async def process_download_task(task: DownloadTask):
 
         try:
             file_path = await downloader.download(task.url)
+            file_path = os.path.abspath(file_path)
+            # Ensure file exists before marking as completed
+            if not os.path.exists(file_path):
+                raise Exception(f"Downloaded file does not exist: {file_path}")
+            
             filename = os.path.basename(file_path)
-
+            file_size = os.path.getsize(file_path)
             download_url = f"/api/v1/download/{task.task_id}"
 
             redis_client.mark_task_completed(
                 task.task_id,
                 filename=filename,
-                download_url=download_url
+                download_url=download_url,
+                file_path=file_path  # Store full path
             )
 
             logger.info(f"Task completed {task.task_id}")
-            log_download(twitter_url=task.url, status="success", file_size=os.path.getsize(file_path), user_ip=task.user_ip)
+            log_download(twitter_url=task.url, status="success", file_size=file_size, user_ip=task.user_ip)
 
         except Exception as e:
             logger.error(f"Task failed {task.task_id}: {e}")

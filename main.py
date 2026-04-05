@@ -107,13 +107,13 @@ DEFAULT_ADMIN = {
 # ============================================================================
 # STARTUP & SHUTDOWN EVENTS
 # ============================================================================
-def init_services():
+async def init_services():
     # Redis
     if not redis_client.health_check():
         raise Exception("Redis connection failed")
 
     # RabbitMQ
-    rabbitmq_publisher.initialize()
+    await rabbitmq_publisher.initialize()
 
 def init_directories():
     base = Path(__file__).parent
@@ -131,7 +131,7 @@ async def startup_event():
     logger.info("🚀 Starting FastAPI system...")
 
     try:
-        init_services()
+        await init_services()  
         init_directories()
         init_background_jobs()
 
@@ -490,18 +490,27 @@ async def download_file(task_id: str, background_tasks: BackgroundTasks):
         if not filename:
             raise HTTPException(status_code=404, detail="File not found")
         
-        # Construct file path
-        file_path = Path(__file__).parent / "downloads" / filename
+        # Try to use stored file_path first, then construct from filename
+        stored_path = task_state.get('file_path')
+        if stored_path and os.path.exists(stored_path):
+            file_path = Path(stored_path)
+        else:
+            # Fallback: reconstruct from filename
+            file_path = Path(__file__).parent / "downloads" / filename
         
         if not file_path.exists():
             logger.error(f"File not found: {file_path}")
+            # List what files DO exist in downloads
+            downloads_dir = Path(__file__).parent / "downloads"
+            if downloads_dir.exists():
+                files = list(downloads_dir.glob("*.mp4"))
+                logger.error(f"Available files: {[f.name for f in files]}")
             raise HTTPException(status_code=404, detail="Download file not found")
         
         logger.info(f"📥 Downloading file: {filename}")
         
-        # Background task to aggressively delete the file after sending (zero disk usage!)
-        background_tasks.add_task(os.remove, str(file_path))
-        
+        # Keep the file available for subsequent frontend refreshes.
+        # Cleanup should be handled separately by a retention policy / cron job.
         return FileResponse(
             path=file_path,
             filename=filename,
@@ -520,16 +529,80 @@ async def download_file(task_id: str, background_tasks: BackgroundTasks):
 # ============================================================================
 
 @app.get("/api/v1/tasks")
-async def get_active_tasks():
-    """Get all active tasks from Redis"""
+async def get_active_tasks(include_completed: bool = Query(False, description="Include completed or failed tasks in the returned list")):
+    """Get active download tasks from Redis.
+
+    By default this endpoint only returns pending and processing tasks.
+    Completed and failed tasks are hidden unless include_completed=true.
+    """
     try:
-        tasks = redis_client.get_active_tasks()
+        tasks = redis_client.get_active_tasks(include_completed=include_completed)
         return {
             "total": len(tasks),
             "tasks": tasks
         }
     except Exception as e:
         logger.error(f"❌ Error retrieving tasks: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@app.post("/api/v1/tasks/refresh")
+async def refresh_task(task_id: str = Query(..., description="Task ID to refresh"), force_refresh: bool = Query(False, description="Set true to force requeueing a fresh download")):
+    """Force a full re-extraction and re-download for a completed or failed task."""
+    try:
+        if not force_refresh:
+            raise HTTPException(status_code=400, detail="force_refresh=true is required to refresh a task")
+
+        task_state = redis_client.get_task_state(task_id)
+        if not task_state:
+            raise HTTPException(status_code=404, detail="Task not found")
+
+        if task_state["status"] not in [TaskStatus.COMPLETED, TaskStatus.FAILED]:
+            raise HTTPException(status_code=400, detail="Only completed or failed tasks can be refreshed")
+
+        new_task_id = str(uuid.uuid4())
+        new_task_state = {
+            "task_id": new_task_id,
+            "url": task_state["url"],
+            "format_id": task_state.get("format_id"),
+            "quality": task_state.get("quality"),
+            "status": TaskStatus.PENDING,
+            "progress": 0,
+            "message": "Task refreshed and queued for download",
+            "filename": None,
+            "download_url": None,
+            "error": None,
+            "created_at": datetime.now().isoformat(),
+            "updated_at": datetime.now().isoformat(),
+            "download_speed": "0 B/s",
+            "eta": "Unknown",
+            "file_size": "Unknown",
+            "downloaded_bytes": 0,
+            "total_bytes": 0,
+            "retry_count": 0,
+            "max_retries": 5
+        }
+
+        redis_client.set_task_state(new_task_id, new_task_state)
+        await rabbitmq_publisher.publish_download_task(DownloadTask(
+            task_id=new_task_id,
+            url=task_state["url"],
+            format_id=task_state.get("format_id", "bestvideo[height<=1080]+bestaudio/best[ext=mp4]"),
+            quality=task_state.get("quality", "1080p"),
+            created_at=new_task_state["created_at"],
+            user_ip=task_state.get("user_ip")
+        ))
+
+        return {
+            "success": True,
+            "message": "Task refreshed and requeued successfully",
+            "task_id": new_task_id
+        }
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"❌ Error refreshing task: {e}")
         raise HTTPException(status_code=500, detail=str(e))
 
 

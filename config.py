@@ -14,6 +14,9 @@ logger = logging.getLogger(__name__)
 class Settings(BaseSettings):
     """Application settings from environment variables"""
 
+    temp_dir: str = "temp"
+    downloads_dir: str = "downloads"
+
     # Redis Configuration
     redis_host: str = "localhost"
     redis_port: int = 6379
@@ -50,12 +53,17 @@ class Settings(BaseSettings):
 settings = Settings()
 
 
-# Supabase client for proxies (optional)
+# Supabase clients for admin and backend operations
+# NOTE: backend tasks and logging should use the service role client when available.
+# This avoids PostgreSQL row-level security failures for server-side inserts.
 supabase_client = None
+supabase_service_client = None
 try:
     from supabase import create_client
     if settings.supabase_url and settings.supabase_anon_key:
         supabase_client = create_client(settings.supabase_url, settings.supabase_anon_key)
+    if settings.supabase_url and settings.supabase_service_role_key:
+        supabase_service_client = create_client(settings.supabase_url, settings.supabase_service_role_key)
 except ImportError:
     pass
 
