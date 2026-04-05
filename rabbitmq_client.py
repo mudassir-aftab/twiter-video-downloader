@@ -29,6 +29,8 @@ class RabbitMQClient:
 
             # ✅ SSL context for AMQPS (required for port 5671)
             ssl_context = ssl.create_default_context()
+            ssl_context.check_hostname = False
+            ssl_context.verify_mode = ssl.CERT_NONE
 
             self.connection = await aio_pika.connect_robust(
                 rabbitmq_url,
