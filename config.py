@@ -125,8 +125,19 @@ def get_random_delay() -> float:
     return random.uniform(settings.min_request_delay, settings.max_request_delay)
 
 
+# def get_redis_url() -> str:
+#     """Generate Redis connection URL"""
+#     if settings.redis_password:
+#         return f"redis://:{settings.redis_password}@{settings.redis_host}:{settings.redis_port}/{settings.redis_db}"
+#     return f"redis://{settings.redis_host}:{settings.redis_port}/{settings.redis_db}"
+
 def get_redis_url() -> str:
     """Generate Redis connection URL"""
+    redis_url = os.getenv("REDIS_URL")
+    if redis_url:
+        return redis_url
+
+    # fallback for local
     if settings.redis_password:
         return f"redis://:{settings.redis_password}@{settings.redis_host}:{settings.redis_port}/{settings.redis_db}"
     return f"redis://{settings.redis_host}:{settings.redis_port}/{settings.redis_db}"
