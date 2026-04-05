@@ -1,0 +1,97 @@
+# Byte-compiled / optimized / DLL files
+__pycache__/
+*.py[cod]
+*$py.class
+
+# C extensions
+*.so
+
+# Distribution / packaging
+.Python
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+*.egg-info/
+.installed.cfg
+*.egg
+
+# Virtual environments
+.env
+.venv
+env/
+venv/
+ENV/
+env.bak/
+venv.bak/
+
+# Environment variables
+.env.*
+*.env
+
+# FastAPI / Uvicorn
+*.log
+logs/
+uvicorn.log
+
+# SQLite database
+*.db
+*.sqlite3
+
+# Testing / coverage
+.coverage
+.coverage.*
+.cache
+nosetests.xml
+coverage.xml
+*.cover
+.pytest_cache/
+
+# Type checkers
+.mypy_cache/
+.dmypy.json
+pyre/
+.pyre/
+
+# IDEs / Editors
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Static files (optional, if generated)
+staticfiles/
+
+# Media uploads (if applicable)
+media/
+
+# Secrets / keys
+*.pem
+*.key
+*.crt
+
+# Docker (optional overrides)
+docker-compose.override.yml
+
+# Alembic migrations (optional if auto-generated)
+# Uncomment if you don't want migrations tracked
+# alembic/versions/
+
+# Pydantic settings cache
+*.json
+
+# Temporary files
+tmp/
+temp/

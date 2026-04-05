@@ -1,0 +1,478 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="description" content="Twitter Video Downloader - Download Twitter/X videos in high quality" />
+    <link rel="stylesheet" href="../static/style.css" />
+
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Geologica:wght@100..900&family=Poppins:ital,wght@0,100;0,200;0,300;0,400;0,500;0,600;0,700;0,800;0,900;1,100;1,200;1,300;1,400;1,500;1,600;1,700;1,800;1,900&family=Quicksand:wght@300..700&display=swap"
+      rel="stylesheet"
+    />
+    <link
+      rel="stylesheet"
+      href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css"
+      integrity="sha512-9usAa10IRO0HhonpyAIVpjrylPvoDwiPUiKdWk5t3PyolY1cOd4DSE0Ga+ri4AuTroPR5aQvXU9xC6qOPnzFeg=="
+      crossorigin="anonymous"
+      referrerpolicy="no-referrer"
+    />
+
+    <title>Twitter Video Downloader - High Performance Async</title>
+  </head>
+  <body>
+    <header class="header">
+      <div class="container-lg">
+        <div class="header__container">
+          <div class="header__logo">
+            <a href="/">
+              <h1>X Loader<span>.</span></h1>
+            </a>
+          </div>
+          <div class="header__links header__hidden">
+            <div class="header__head">
+              <div class="header__logo-main">
+                <a href="/">
+                  <h1>X Loader<span>.</span></h1>
+                </a>
+              </div>
+              <div class="header__close">
+                <i class="fa-solid fa-xmark"></i>
+              </div>
+            </div>
+
+            <ul>
+              <li><a href="#">Features</a></li>
+              <li><a href="#">About</a></li>
+              <li><a href="#">Contact</a></li>
+            </ul>
+          </div>
+          <div class="header__menu">
+            <i class="fa-solid fa-bars-staggered"></i>
+          </div>
+        </div>
+      </div>
+    </header>
+
+    <div class="container">
+      <!-- Hero Section -->
+      <section class="section--hero">
+        <div class="hero">
+          <div class="hero__icons">
+            <div class="hero__icon hero__star">
+              <i class="fa-solid fa-star"></i>
+            </div>
+            <div class="hero__icon hero__music">
+              <i class="fa-solid fa-music"></i>
+            </div>
+            <div class="hero__icon hero__video">
+              <i class="fa-solid fa-video"></i>
+            </div>
+            <div class="hero__icon hero__twitter">
+              <i class="fa-brands fa-x-twitter"></i>
+            </div>
+          </div>
+          <div class="hero__container">
+            <div class="hero__title">
+              <h1>Twitter Video Downloader</h1>
+              <div class="hero__img">
+                <img src="/images/wave.png" alt="decorative wave" />
+              </div>
+            </div>
+            <div class="hero__subtitle">
+              <h2>
+                Download Twitter/X videos in seconds. Transform your favorite tweets into offline content with our reliable and efficient downloader.
+              </h2>
+            </div>
+          </div>
+        </div>
+      </section>
+    </div>
+
+    <div class="container">
+      <div class="content">
+        <!-- URL Input Form -->
+        <form class="url-form" id="urlForm">
+          <div class="input-group">
+            <input
+              type="url"
+              class="url-input"
+              id="urlInput"
+              placeholder="Paste Twitter/X video URL here..."
+              required
+            />
+            <button type="submit" class="btn btn-primary" id="extractBtn">
+              Extract Info
+            </button>
+          </div>
+        </form>
+
+        <!-- Loading State -->
+        <div class="loading" id="loading" style="display: none;">
+          <div class="spinner loader--default">
+            <div></div>
+            <div></div>
+            <div></div>
+            <div></div>
+            <div></div>
+            <div></div>
+            <div></div>
+            <div></div>
+            <div></div>
+            <div></div>
+            <div></div>
+            <div></div>
+          </div>
+          <p>Extracting video information...</p>
+        </div>
+
+        <!-- Error Message -->
+        <div class="error" id="error" style="display: none;"></div>
+
+        <!-- Success Message -->
+        <div class="success" id="success" style="display: none;"></div>
+
+        <!-- Video Information -->
+        <div class="video-info" id="videoInfo" style="display: none;">
+          <div class="video-preview" id="videoPreview">
+            <img class="video-thumbnail" id="thumbnail" alt="Video thumbnail" />
+            <div class="video-details">
+              <h3 id="videoTitle"></h3>
+              <div class="video-meta" id="videoAuthor"></div>
+              <div class="video-meta" id="videoHandle"></div>
+              <div class="stats-row">
+                <div class="stat-item">
+                  <span id="videoReposts"></span>
+                </div>
+                <div class="stat-item">
+                  <span id="videoLikes"></span>
+                </div>
+                <div class="stat-item">
+                  <span id="videoDate"></span>
+                </div>
+              </div>
+              <div class="video-description" id="videoDescription"></div>
+            </div>
+          </div>
+
+          <!-- Formats Section -->
+          <div class="formats-section">
+            <h4>📋 Available Formats</h4>
+
+            <!-- Format Type Tabs -->
+            <div class="format-tabs">
+              <button class="format-tab active" data-tab="video">
+                🎥 Video Formats
+              </button>
+              <button class="format-tab" data-tab="audio">
+                🎵 Audio Formats
+              </button>
+            </div>
+
+            <!-- Video Formats Grid -->
+            <div class="formats-grid active" id="videoFormatsGrid"></div>
+
+            <!-- Audio Formats Grid -->
+            <div class="formats-grid" id="audioFormatsGrid"></div>
+          </div>
+        </div>
+
+        <!-- Downloads Container -->
+        <div class="downloads-container" id="downloadsContainer" style="display: none;">
+          <h4>📥 Downloads</h4>
+          <div class="downloads-list" id="downloadsList"></div>
+        </div>
+
+        <!-- Video Player -->
+        <div class="video-player" id="videoPlayer" style="display: none;">
+          <h4>🎬 Video Player</h4>
+          <video controls id="videoElement">
+            Your browser does not support the video tag.
+          </video>
+        </div>
+      </div>
+    </div>
+
+    <!-- Note Section -->
+    <section class="section--note">
+      <div class="container-lg">
+        <div class="note">
+          <div class="container">
+            <p>We do not allow/support the download of copyright material!</p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- About Section -->
+    <section class="section--about">
+      <div class="about">
+        <div class="container">
+          <div class="about__content">
+            <div class="about__title">
+              <h1>What is X Loader</h1>
+              <div class="about__img">
+                <img src="/images/wave.png" alt="decorative wave" />
+              </div>
+            </div>
+            <div class="about__text">
+              <p>
+                X Loader is a powerful Twitter/X video downloader that allows you to download and save videos from Twitter/X with ease. Simply paste the video URL, choose your desired format, and download instantly. No installation required, completely free, and works seamlessly across all devices.
+              </p>
+            </div>
+          </div>
+        </div>
+        <div class="container-lg">
+          <div class="about__container">
+            <div class="about__col">
+              <div class="about__heading">
+                <h3>
+                  Download Twitter Videos in Multiple Formats
+                </h3>
+              </div>
+              <div class="about__col-text">
+                <p>
+                  X Loader provides multiple quality options for Twitter video downloads. Choose from various resolutions, download audio-only versions, or get the complete video with sound. All formats are processed quickly and efficiently.
+                </p>
+              </div>
+            </div>
+            <div class="about__col about__col-2">
+              <div class="about__heading">
+                <h3>Your One-Stop Solution to Twitter Video Downloading</h3>
+              </div>
+              <div class="about__col-text">
+                <p>
+                  Download your favorite Twitter/X videos with just a few clicks. Our service is completely free, no registration needed, and works instantly. Track your downloads in real-time with our advanced progress tracking system. Save videos offline for later viewing without any limitations.
+                </p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- FAQ Section -->
+    <section class="section--faq">
+      <div class="faq">
+        <div class="container-lg">
+          <div class="heading--primary">
+            <span>faq</span>
+            <h1>Frequently Asked Questions</h1>
+            <div class="primary__img">
+              <img src="/images/wave.png" alt="border bottom wave" />
+            </div>
+          </div>
+
+          <div class="faq__container">
+            <div class="faq__col">
+              <div class="faq__col-title">
+                <h3>Twitter Video Downloader: FAQs</h3>
+              </div>
+
+              <div class="accordion">
+                <div class="accordion-item">
+                  <div class="accordion-header">
+                    Is it safe to use X Loader?
+                    <div class="accordion-arrow">
+                      <i class="fa-solid fa-chevron-right"></i>
+                    </div>
+                  </div>
+                  <div class="accordion-content">
+                    <div class="accordion-inner">
+                      Yes, X Loader is completely safe and secure. We use advanced encryption to protect your data and privacy. No personal information is stored or shared.
+                    </div>
+                  </div>
+                </div>
+
+                <div class="accordion-item">
+                  <div class="accordion-header">
+                    Do I need to create an account?
+                    <div class="accordion-arrow">
+                      <i class="fa-solid fa-chevron-right"></i>
+                    </div>
+                  </div>
+                  <div class="accordion-content">
+                    <div class="accordion-inner">
+                      No, X Loader is completely free and requires no account creation. Simply paste the video URL and download instantly.
+                    </div>
+                  </div>
+                </div>
+
+                <div class="accordion-item">
+                  <div class="accordion-header">
+                    What video qualities are available?
+                    <div class="accordion-arrow">
+                      <i class="fa-solid fa-chevron-right"></i>
+                    </div>
+                  </div>
+                  <div class="accordion-content">
+                    <div class="accordion-inner">
+                      We support multiple quality options from 1080p down to 480p, plus audio-only MP3 format. The available formats depend on the original Twitter video quality.
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div class="faq__col">
+              <div class="faq__col-title">
+                <h3>General Questions</h3>
+              </div>
+              <div class="accordion">
+                <div class="accordion-item">
+                  <div class="accordion-header">
+                    How long does it take to download?
+                    <div class="accordion-arrow">
+                      <i class="fa-solid fa-chevron-right"></i>
+                    </div>
+                  </div>
+                  <div class="accordion-content">
+                    <div class="accordion-inner">
+                      Most downloads complete within seconds. The time depends on video size and your internet connection speed. Our system shows real-time progress tracking.
+                    </div>
+                  </div>
+                </div>
+
+                <div class="accordion-item">
+                  <div class="accordion-header">
+                    Can I download private videos?
+                    <div class="accordion-arrow">
+                      <i class="fa-solid fa-chevron-right"></i>
+                    </div>
+                  </div>
+                  <div class="accordion-content">
+                    <div class="accordion-inner">
+                      No, X Loader can only download public Twitter videos. Private videos are protected by Twitter's terms of service and cannot be accessed.
+                    </div>
+                  </div>
+                </div>
+
+                <div class="accordion-item">
+                  <div class="accordion-header">
+                    Are there download limits?
+                    <div class="accordion-arrow">
+                      <i class="fa-solid fa-chevron-right"></i>
+                    </div>
+                  </div>
+                  <div class="accordion-content">
+                    <div class="accordion-inner">
+                      No, there are no download limits. Download as many videos as you want completely free, anytime, anywhere.
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Features Section -->
+    <section class="section--feature">
+      <div class="feature">
+        <div class="container-lg">
+          <div class="heading--primary">
+            <span>features</span>
+            <h1>What Makes Us Special</h1>
+            <div class="primary__img">
+              <img src="/images/wave.png" alt="border bottom wave" />
+            </div>
+          </div>
+          <div class="feature__container">
+            <div class="feature__card">
+              <div class="feature__icon">
+                <i class="fa-solid fa-infinity" style="font-size: 2.5rem; color: #1da1f2;"></i>
+              </div>
+              <div class="fearture__title">
+                <h2>No Download Limits</h2>
+              </div>
+              <div class="feature__text">
+                <p>Download unlimited Twitter videos without any restrictions or quotas.</p>
+              </div>
+            </div>
+
+            <div class="feature__card">
+              <div class="feature__icon">
+                <i class="fa-solid fa-gift" style="font-size: 2.5rem; color: #1da1f2;"></i>
+              </div>
+              <div class="fearture__title">
+                <h2>Completely Free</h2>
+              </div>
+              <div class="feature__text">
+                <p>Download all Twitter videos completely free. No hidden charges or premium plans.</p>
+              </div>
+            </div>
+
+            <div class="feature__card">
+              <div class="feature__icon">
+                <i class="fa-solid fa-bolt" style="font-size: 2.5rem; color: #1da1f2;"></i>
+              </div>
+              <div class="fearture__title">
+                <h2>Lightning Fast Speed</h2>
+              </div>
+              <div class="feature__text">
+                <p>Our platform downloads videos incredibly fast with real-time progress tracking.</p>
+              </div>
+            </div>
+
+            <div class="feature__card">
+              <div class="feature__icon">
+                <i class="fa-solid fa-mouse" style="font-size: 2.5rem; color: #1da1f2;"></i>
+              </div>
+              <div class="fearture__title">
+                <h2>Easy to Use</h2>
+              </div>
+              <div class="feature__text">
+                <p>Simple three-step process: paste URL, select format, and download instantly.</p>
+              </div>
+            </div>
+
+            <div class="feature__card">
+              <div class="feature__icon">
+                <i class="fa-solid fa-cloud-arrow-down" style="font-size: 2.5rem; color: #1da1f2;"></i>
+              </div>
+              <div class="fearture__title">
+                <h2>No App Installation</h2>
+              </div>
+              <div class="feature__text">
+                <p>Use our service directly in your browser. No apps to download or install.</p>
+              </div>
+            </div>
+
+            <div class="feature__card">
+              <div class="feature__icon">
+                <i class="fa-solid fa-shield" style="font-size: 2.5rem; color: #1da1f2;"></i>
+              </div>
+              <div class="fearture__title">
+                <h2>Fully Secured</h2>
+              </div>
+              <div class="feature__text">
+                <p>Your data is encrypted and secure. We never store personal information.</p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Footer -->
+    <footer class="footer">
+      <div class="container">
+        <div class="footer__container">
+          <div class="footer__logo">
+            <a href="/">
+              <h1>X Loader<span>.</span></h1>
+            </a>
+          </div>
+          <div class="footer__copy">
+            <p>&copy; 2024 X Loader. All rights reserved. | Download Twitter videos safely and securely.</p>
+          </div>
+        </div>
+      </div>
+    </footer>
+
+    <script src="../static/script.js"></script>
+  </body>
+</html>

@@ -1,0 +1,216 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin Tasks - Twitter Video Downloader</title>
+    <link rel="stylesheet" href="/static/style.css">
+    <style>
+        body {
+            background: #f5f5f5;
+            margin: 0;
+            font-family: Arial, sans-serif;
+        }
+        .tasks-container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        .header {
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        .header h1 {
+            margin: 0 0 10px 0;
+            color: #333;
+        }
+        .user-info {
+            color: #666;
+            font-size: 14px;
+        }
+        .table-container {
+            background: white;
+            border-radius: 8px;
+            overflow: hidden;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+        th {
+            background: #f8f9fa;
+            padding: 15px;
+            text-align: left;
+            font-weight: 600;
+            color: #333;
+            border-bottom: 2px solid #ddd;
+        }
+        td {
+            padding: 15px;
+            border-bottom: 1px solid #ddd;
+        }
+        tr:hover {
+            background: #f9f9f9;
+        }
+        .status-badge {
+            display: inline-block;
+            padding: 5px 10px;
+            border-radius: 4px;
+            font-size: 12px;
+            font-weight: 600;
+        }
+        .status-processing {
+            background: #fff3cd;
+            color: #856404;
+        }
+        .status-completed {
+            background: #d4edda;
+            color: #155724;
+        }
+        .status-failed {
+            background: #f8d7da;
+            color: #721c24;
+        }
+        .status-pending {
+            background: #e2e3e5;
+            color: #383d41;
+        }
+        .progress-bar {
+            width: 100%;
+            height: 20px;
+            background: #f0f0f0;
+            border-radius: 4px;
+            overflow: hidden;
+        }
+        .progress-fill {
+            background: linear-gradient(90deg, #667eea, #764ba2);
+            height: 100%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-size: 12px;
+            transition: width 0.3s;
+        }
+        .cancel-btn {
+            background: #e74c3c;
+            color: white;
+            border: none;
+            padding: 6px 12px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 12px;
+            transition: background 0.3s;
+        }
+        .cancel-btn:hover {
+            background: #c0392b;
+        }
+        .cancel-btn:disabled {
+            background: #bdc3c7;
+            cursor: not-allowed;
+        }
+        .nav {
+            margin-top: 20px;
+            text-align: center;
+        }
+        .nav a {
+            display: inline-block;
+            padding: 10px 20px;
+            margin: 0 10px;
+            background: #667eea;
+            color: white;
+            text-decoration: none;
+            border-radius: 5px;
+            transition: background 0.3s;
+        }
+        .nav a:hover {
+            background: #764ba2;
+        }
+    </style>
+</head>
+<body>
+    <div class="tasks-container">
+        <div class="header">
+            <h1>Task Management</h1>
+            <p class="user-info">Logged in as: {{ admin.email }}</p>
+        </div>
+        
+        <div class="table-container">
+            {% if tasks %}
+            <table>
+                <thead>
+                    <tr>
+                        <th>Task ID</th>
+                        <th>URL</th>
+                        <th>Status</th>
+                        <th>Progress</th>
+                        <th>Created</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for task in tasks %}
+                    <tr>
+                        <td><small>{{ task.task_id[:8] }}...</small></td>
+                        <td><small>{{ task.url[:50] }}...</small></td>
+                        <td>
+                            <span class="status-badge status-{{ task.status }}">
+                                {{ task.status }}
+                            </span>
+                        </td>
+                        <td>
+                            <div class="progress-bar">
+                                <div class="progress-fill" style="width: {{ task.progress }}%">
+                                    {{ task.progress }}%
+                                </div>
+                            </div>
+                        </td>
+                        <td><small>{{ task.created_at }}</small></td>
+                        <td>
+                            {% if task.status == 'processing' %}
+                            <button class="cancel-btn" onclick="cancelTask('{{ task.task_id }}')">Cancel</button>
+                            {% else %}
+                            <button class="cancel-btn" disabled>N/A</button>
+                            {% endif %}
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+            {% else %}
+            <div style="padding: 40px; text-align: center; color: #999;">
+                <p>No tasks found</p>
+            </div>
+            {% endif %}
+        </div>
+        
+        <div class="nav">
+            <a href="/admin/dashboard">Back to Dashboard</a>
+            <a href="/admin/logout" onclick="logout()">Logout</a>
+        </div>
+    </div>
+    
+    <script>
+        function cancelTask(taskId) {
+            if (confirm('Are you sure you want to cancel this task?')) {
+                fetch(`/api/v1/cancel/${taskId}`, { method: 'POST' })
+                    .then(response => response.json())
+                    .then(data => {
+                        alert(data.message);
+                        location.reload();
+                    })
+                    .catch(error => alert('Error: ' + error));
+            }
+        }
+        
+        function logout() {
+            fetch('/admin/logout', { method: 'POST' })
+                .then(() => window.location.href = '/admin/login');
+        }
+    </script>
+</body>
+</html>

@@ -1,0 +1,317 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Twitter Video Downloader — Tweeload</title>
+    <link rel="stylesheet" href="/static/modern.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <script src="https://unpkg.com/lucide@latest"></script>
+</head>
+<body class="tw-site">
+    <header class="site-header">
+        <div class="header-inner">
+            <a href="/" class="brand" aria-label="Tweeload home">
+                <span class="brand-mark" aria-hidden="true">
+                    <svg width="28" height="28" viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg">
+                        <path d="M16 2L28 9v14L16 30 4 23V9L16 2z" fill="#1DA1F2"/>
+                        <path d="M16 8l6 3.5v7L16 22l-6-3.5v-7L16 8z" fill="#fff" fill-opacity=".95"/>
+                    </svg>
+                </span>
+                <span class="brand-name">tweeload</span>
+            </a>
+            <button type="button" class="nav-toggle" id="navToggle" aria-label="Open menu" aria-expanded="false">
+                <i data-lucide="menu"></i>
+            </button>
+            <nav class="site-nav" id="siteNav" aria-label="Primary">
+                <a href="/">Home</a>
+                <a href="#how-to">How to Use</a>
+                <a href="#">Blog</a>
+                <a href="#">Generate Screenshot</a>
+                <details class="nav-more">
+                    <summary>More <i data-lucide="chevron-down"></i></summary>
+                    <div class="nav-more-panel">
+                        <a href="#">Bookmarks</a>
+                        <a href="#">Chrome Extension</a>
+                        <a href="#">GIF Downloader</a>
+                    </div>
+                </details>
+            </nav>
+            <div class="header-tools">
+                <button type="button" class="icon-btn" id="themeToggle" title="Toggle theme" aria-label="Toggle dark mode">
+                    <i data-lucide="moon"></i>
+                </button>
+                <button type="button" class="icon-btn" title="Language" aria-label="Language">
+                    <i data-lucide="globe"></i>
+                </button>
+            </div>
+        </div>
+    </header>
+
+    <main class="site-main">
+        <section class="hero-tool">
+            <h1 class="hero-title">
+                <span class="hero-title-accent">Twitter</span> Video Downloader
+            </h1>
+            <p class="hero-lead">Download Twitter videos and GIFs from any Tweet.</p>
+
+            <div class="command-center" id="commandCenter">
+                <div class="hero-input-row">
+                    <input
+                        type="text"
+                        id="videoUrl"
+                        class="hero-input"
+                        placeholder="Paste a Tweet Link (e.g. https://twitter.com/x/status/...)"
+                        autocomplete="off"
+                        inputmode="url"
+                    >
+                    <button type="button" id="extractBtn" class="btn-download-primary">
+                        <span class="extract-spinner" aria-hidden="true"><i data-lucide="loader-2"></i></span>
+                        <span class="extract-label">Download</span>
+                    </button>
+                </div>
+                <p class="hero-subline">
+                    Try our new tool: <a href="#">Twitter Screenshot Maker</a>
+                    <span class="hero-subline-sep">|</span>
+                    <a href="#">Download GIF from Twitter</a>
+                    <span class="hero-subline-sep">|</span>
+                    <button type="button" id="pasteBtn" class="link-like">Paste from clipboard</button>
+                </p>
+                <p id="urlError" class="url-error" role="alert"></p>
+            </div>
+        </section>
+
+        <div class="tool-stack">
+            <section id="videoInfoSection" class="content-card tool-card tool-card--details" style="display: none;">
+                <h2 class="card-heading">Video details</h2>
+                <div id="videoInfo"></div>
+            </section>
+
+            <section id="formatSection" class="content-card tool-card" style="display: none;">
+                <div class="formats-panel-head">
+                    <h2 class="card-heading-inline">Choose format</h2>
+                    <div class="tab-switcher" role="tablist" aria-label="Media type" data-active="video">
+                        <span class="tab-slider" aria-hidden="true"></span>
+                        <button type="button" class="tab-btn active" data-tab="video-formats" role="tab" aria-selected="true" aria-controls="video-formats" id="tab-video">
+                            <i data-lucide="video"></i>
+                            <span>Video</span>
+                        </button>
+                        <button type="button" class="tab-btn" data-tab="audio-formats" role="tab" aria-selected="false" aria-controls="audio-formats" id="tab-audio">
+                            <i data-lucide="music-2"></i>
+                            <span>Audio</span>
+                        </button>
+                    </div>
+                </div>
+                <div id="video-formats" class="tab-panel active" role="tabpanel" aria-labelledby="tab-video">
+                    <div id="videoFormats" class="format-grid format-grid--compact"></div>
+                </div>
+                <div id="audio-formats" class="tab-panel" role="tabpanel" aria-labelledby="tab-audio">
+                    <div id="audioFormats" class="format-grid format-grid-audio format-grid--compact"></div>
+                </div>
+            </section>
+
+            <section id="progressSection" class="content-card tool-card" style="display: none;">
+                <h2 class="card-heading">Download status</h2>
+                <div id="taskInfo"></div>
+            </section>
+
+            <section id="tasksSection" class="content-card tool-card" style="display: none;">
+                <h2 class="card-heading">Active downloads</h2>
+                <div id="activeTasksList" class="active-tasks-list"></div>
+            </section>
+        </div>
+
+        <article class="content-card" id="intro">
+            <h2 class="card-title"><span class="text-brand">Tweeload</span> — Twitter Video Downloader</h2>
+            <div class="prose">
+                <p>Tweeload is the easiest way to download Twitter videos and GIFs to your device. Paste any public Tweet link, pick your quality, and save the file — no signup required.</p>
+                <p>Whether you want to keep a clip offline, archive content you created, or save media for personal use, our tool is built to be fast and straightforward.</p>
+                <ul class="feature-list">
+                    <li>Download videos in the best quality available from the source</li>
+                    <li>Save GIFs and short clips for offline viewing</li>
+                    <li>Free to use in your browser — no registration</li>
+                    <li>Works on phone, tablet, and desktop</li>
+                </ul>
+            </div>
+        </article>
+
+        <article class="content-card" id="how-to">
+            <h2 class="card-title card-title-center">How to Download Twitter Videos</h2>
+            <div class="steps-three">
+                <div class="step-col">
+                    <div class="step-badge">1</div>
+                    <h3 class="step-heading">Copy the Tweet link</h3>
+                    <p class="step-text">Open the Tweet on Twitter or X, tap the share icon, and copy the link to the post.</p>
+                </div>
+                <div class="step-col">
+                    <div class="step-badge">2</div>
+                    <h3 class="step-heading">Paste the Tweet link</h3>
+                    <p class="step-text">Paste the URL into the box above and click <strong>Download</strong> to load available formats.</p>
+                </div>
+                <div class="step-col">
+                    <div class="step-badge">3</div>
+                    <h3 class="step-heading">Download the video</h3>
+                    <p class="step-text">Choose your preferred resolution or audio option, then download the file to your device.</p>
+                </div>
+            </div>
+            <p class="card-footnote">You can also try our <a href="#">Twitter Screenshot Maker</a> to capture posts as images.</p>
+        </article>
+
+        <article class="content-card" id="devices">
+            <h2 class="card-title card-title-center">Download Twitter Videos on Any Device</h2>
+            <div class="prose device-blocks">
+                <h3 class="device-title">Android</h3>
+                <p>Open this page in <strong>Chrome</strong> or <strong>Samsung Internet</strong>, paste your Tweet link, and download. For easier access, add the site to your home screen from the browser menu.</p>
+                <h3 class="device-title">iPhone and iPad</h3>
+                <p>Use <strong>Safari</strong> or <strong>Chrome</strong>. After downloading, open the file from your Downloads or Files app. You can also bookmark this page for quick access.</p>
+                <h3 class="device-title">Desktop and Laptop</h3>
+                <p>Works in all modern browsers including Chrome, Firefox, Edge, and Safari. For repeated use, try a <a href="#">browser extension</a> or pin this tab.</p>
+            </div>
+        </article>
+
+        <section class="faq-block" id="faq">
+            <h2 class="faq-title">Frequently Asked Questions</h2>
+            <div class="accordion">
+                <details class="accordion-row">
+                    <summary>What is Tweeload? <i data-lucide="chevron-down" class="acc-icon"></i></summary>
+                    <div class="accordion-body"><p>Tweeload is a free online Twitter / X video downloader. It helps you save public videos and GIFs from Tweets to your phone or computer.</p></div>
+                </details>
+                <details class="accordion-row">
+                    <summary>Is Tweeload free to use? <i data-lucide="chevron-down" class="acc-icon"></i></summary>
+                    <div class="accordion-body"><p>Yes. There is no charge for downloading videos from public Tweets through this tool.</p></div>
+                </details>
+                <details class="accordion-row">
+                    <summary>Do I need to create an account? <i data-lucide="chevron-down" class="acc-icon"></i></summary>
+                    <div class="accordion-body"><p>No account is required. Paste the Tweet URL and follow the steps to download.</p></div>
+                </details>
+                <details class="accordion-row">
+                    <summary>Can I download private videos? <i data-lucide="chevron-down" class="acc-icon"></i></summary>
+                    <div class="accordion-body"><p>No. Only publicly accessible posts can be processed. Private, protected, or deleted Tweets cannot be downloaded.</p></div>
+                </details>
+                <details class="accordion-row">
+                    <summary>Is it legal to download Twitter videos? <i data-lucide="chevron-down" class="acc-icon"></i></summary>
+                    <div class="accordion-body"><p>You are responsible for complying with copyright law and Twitter/X terms. Only download content you have the right to use, such as your own uploads or media you are permitted to save.</p></div>
+                </details>
+                <details class="accordion-row">
+                    <summary>What quality can I download? <i data-lucide="chevron-down" class="acc-icon"></i></summary>
+                    <div class="accordion-body"><p>We offer the qualities X makes available for that Tweet — often including HD options when the uploader posted high-resolution video.</p></div>
+                </details>
+                <details class="accordion-row">
+                    <summary>Can I download GIFs? <i data-lucide="chevron-down" class="acc-icon"></i></summary>
+                    <div class="accordion-body"><p>Yes. GIFs on Twitter are often served as short video files; you can download them like regular Tweet videos.</p></div>
+                </details>
+                <details class="accordion-row">
+                    <summary>Does Tweeload store my links or files? <i data-lucide="chevron-down" class="acc-icon"></i></summary>
+                    <div class="accordion-body"><p>We focus on processing your request to generate a download. Do not use the tool for content you are not allowed to copy or redistribute.</p></div>
+                </details>
+                <details class="accordion-row">
+                    <summary>Why did my download fail? <i data-lucide="chevron-down" class="acc-icon"></i></summary>
+                    <div class="accordion-body"><p>The Tweet may have been deleted, the account may be private, or the media may be region-restricted. Check that the URL is correct and the post is public.</p></div>
+                </details>
+                <details class="accordion-row">
+                    <summary>Can I use Tweeload on mobile? <i data-lucide="chevron-down" class="acc-icon"></i></summary>
+                    <div class="accordion-body"><p>Yes. The site is responsive and works on Android and iOS browsers.</p></div>
+                </details>
+                <details class="accordion-row">
+                    <summary>Is Tweeload affiliated with Twitter or X? <i data-lucide="chevron-down" class="acc-icon"></i></summary>
+                    <div class="accordion-body"><p>No. Tweeload is not affiliated with, endorsed by, or sponsored by Twitter, Inc. or X Corp. “Twitter” is a trademark of its respective owner.</p></div>
+                </details>
+                <details class="accordion-row">
+                    <summary>How do I report a problem? <i data-lucide="chevron-down" class="acc-icon"></i></summary>
+                    <div class="accordion-body"><p>Use the <a href="#">Contact</a> link in the footer or send feedback through our support channels.</p></div>
+                </details>
+                <details class="accordion-row">
+                    <summary>Is there a Chrome extension? <i data-lucide="chevron-down" class="acc-icon"></i></summary>
+                    <div class="accordion-body"><p>Extensions may be offered separately. Check the Quick Links section in the footer for updates.</p></div>
+                </details>
+            </div>
+        </section>
+    </main>
+
+    <footer class="site-footer">
+        <div class="footer-grid">
+            <div class="footer-col">
+                <a href="/" class="brand brand-footer">
+                    <span class="brand-mark" aria-hidden="true">
+                        <svg width="24" height="24" viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg">
+                            <path d="M16 2L28 9v14L16 30 4 23V9L16 2z" fill="#1DA1F2"/>
+                            <path d="M16 8l6 3.5v7L16 22l-6-3.5v-7L16 8z" fill="#fff" fill-opacity=".95"/>
+                        </svg>
+                    </span>
+                    <span class="brand-name">tweeload</span>
+                </a>
+                <p class="footer-disclaimer">We are not affiliated, associated, authorized, endorsed by, or in any way officially connected with Twitter, X, or any of their subsidiaries.</p>
+                <div class="social-row">
+                    <a href="#" class="social-link" aria-label="Facebook"><i data-lucide="facebook"></i></a>
+                    <a href="#" class="social-link" aria-label="Twitter"><i data-lucide="twitter"></i></a>
+                    <a href="#" class="social-link" aria-label="Pinterest"><i data-lucide="image"></i></a>
+                    <a href="#" class="social-link" aria-label="Instagram"><i data-lucide="instagram"></i></a>
+                </div>
+            </div>
+            <div class="footer-col">
+                <h3 class="footer-heading">Legal</h3>
+                <a href="#">Privacy Policy</a>
+                <a href="#">Terms of Service</a>
+                <a href="#">About</a>
+            </div>
+            <div class="footer-col">
+                <h3 class="footer-heading">Quick Links</h3>
+                <a href="#how-to">How to Use</a>
+                <a href="#">Bookmarks</a>
+                <a href="#">Chrome Extension</a>
+                <a href="#">GIF Downloader</a>
+            </div>
+            <div class="footer-col">
+                <h3 class="footer-heading">Our Sites</h3>
+                <a href="#">Reddit Video Downloader</a>
+                <a href="#">Threads Downloader</a>
+                <a href="#">Twitch Clip Downloader</a>
+                <a href="#">YouTube Downloader</a>
+            </div>
+            <div class="footer-col">
+                <h3 class="footer-heading">Resources</h3>
+                <a href="#">Blog</a>
+                <a href="#">Phone Download Guide</a>
+                <a href="#">Android App</a>
+                <a href="#">iOS App</a>
+                <a href="/admin" class="footer-admin-link">Admin</a>
+            </div>
+        </div>
+        <p class="footer-copy">© 2015 — 2026 Tweeload. All rights reserved.</p>
+    </footer>
+
+    <div class="fab-stack" aria-label="Quick actions">
+        <button type="button" class="fab" title="Rate us" aria-label="Rate us"><i data-lucide="heart"></i></button>
+        <button type="button" class="fab" title="Share" aria-label="Share"><i data-lucide="share-2"></i></button>
+    </div>
+
+    <div id="mobileDownloadDock" class="mobile-download-dock" style="display: none;"></div>
+
+    <script>
+        lucide.createIcons();
+        (function () {
+            var nav = document.getElementById('siteNav');
+            var toggle = document.getElementById('navToggle');
+            if (toggle && nav) {
+                toggle.addEventListener('click', function () {
+                    var open = nav.classList.toggle('is-open');
+                    toggle.setAttribute('aria-expanded', open ? 'true' : 'false');
+                    if (window.lucide) lucide.createIcons();
+                });
+            }
+            var themeBtn = document.getElementById('themeToggle');
+            if (themeBtn) {
+                themeBtn.addEventListener('click', function () {
+                    document.body.classList.toggle('tw-dark');
+                    var dark = document.body.classList.contains('tw-dark');
+                    themeBtn.innerHTML = dark ? '<i data-lucide="sun"></i>' : '<i data-lucide="moon"></i>';
+                    if (window.lucide) lucide.createIcons();
+                });
+            }
+        })();
+    </script>
+    <script src="/static/script.js"></script>
+</body>
+</html>

@@ -1,0 +1,663 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin Dashboard - Twitter Video Downloader</title>
+    <link rel="stylesheet" href="/static/style.css">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        body {
+            background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+            min-height: 100vh;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+        .dashboard-container {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        .header {
+            background: white;
+            padding: 25px;
+            border-radius: 12px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 30px;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+        }
+        .header h1 {
+            color: #2c3e50;
+            font-size: 28px;
+        }
+        .user-info {
+            color: #7f8c8d;
+            font-size: 14px;
+        }
+        .logout-btn {
+            background: linear-gradient(135deg, #e74c3c 0%, #c0392b 100%);
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 6px;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+        .logout-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(231, 76, 60, 0.4);
+        }
+        .tabs {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 20px;
+            background: white;
+            padding: 15px;
+            border-radius: 12px;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+        }
+        .tab-btn {
+            padding: 10px 20px;
+            border: none;
+            background: #ecf0f1;
+            cursor: pointer;
+            border-radius: 6px;
+            transition: all 0.3s;
+            font-weight: 600;
+            color: #2c3e50;
+        }
+        .tab-btn.active {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+        }
+        .tab-btn:hover {
+            transform: translateY(-2px);
+        }
+        .tab-content {
+            display: none;
+        }
+        .tab-content.active {
+            display: block;
+        }
+
+        /* Stats Grid */
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 20px;
+            margin-bottom: 20px;
+        }
+        .stat-card {
+            background: white;
+            padding: 25px;
+            border-radius: 12px;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+            border-left: 5px solid #667eea;
+            transition: all 0.3s;
+        }
+        .stat-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 8px 25px rgba(0, 0, 0, 0.15);
+        }
+        .stat-card h3 {
+            color: #7f8c8d;
+            font-size: 14px;
+            margin-bottom: 10px;
+            text-transform: uppercase;
+        }
+        .stat-value {
+            font-size: 36px;
+            font-weight: bold;
+            color: #667eea;
+        }
+        .stat-card.warning {
+            border-left-color: #f39c12;
+        }
+        .stat-card.warning .stat-value {
+            color: #f39c12;
+        }
+        .stat-card.success {
+            border-left-color: #27ae60;
+        }
+        .stat-card.success .stat-value {
+            color: #27ae60;
+        }
+        .stat-card.danger {
+            border-left-color: #e74c3c;
+        }
+        .stat-card.danger .stat-value {
+            color: #e74c3c;
+        }
+
+        /* Proxy Management */
+        .proxy-section {
+            background: white;
+            padding: 25px;
+            border-radius: 12px;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+        }
+        .proxy-form {
+            display: grid;
+            grid-template-columns: 1fr 1fr auto;
+            gap: 15px;
+            margin-bottom: 20px;
+            padding-bottom: 20px;
+            border-bottom: 2px solid #ecf0f1;
+        }
+        .form-group {
+            display: flex;
+            flex-direction: column;
+        }
+        .form-group label {
+            color: #2c3e50;
+            font-weight: 600;
+            margin-bottom: 8px;
+            font-size: 14px;
+        }
+        .form-group input {
+            padding: 12px;
+            border: 2px solid #ecf0f1;
+            border-radius: 6px;
+            font-size: 14px;
+            transition: border-color 0.3s;
+        }
+        .form-group input:focus {
+            outline: none;
+            border-color: #667eea;
+            box-shadow: 0 0 5px rgba(102, 126, 234, 0.3);
+        }
+        .add-btn {
+            background: linear-gradient(135deg, #27ae60 0%, #229954 100%);
+            color: white;
+            border: none;
+            padding: 12px 20px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-weight: 600;
+            transition: all 0.3s;
+            align-self: flex-end;
+        }
+        .add-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(39, 174, 96, 0.4);
+        }
+        .proxy-list {
+            display: grid;
+            gap: 10px;
+        }
+        .proxy-item {
+            background: #f8f9fa;
+            padding: 15px;
+            border-radius: 8px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-left: 4px solid #667eea;
+        }
+        .proxy-url {
+            font-family: monospace;
+            color: #2c3e50;
+            font-weight: 600;
+        }
+        .proxy-actions {
+            display: flex;
+            gap: 10px;
+        }
+        .delete-btn {
+            background: #e74c3c;
+            color: white;
+            border: none;
+            padding: 8px 12px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 12px;
+            transition: all 0.3s;
+        }
+        .delete-btn:hover {
+            background: #c0392b;
+        }
+        .test-btn {
+            background: #3498db;
+            color: white;
+            border: none;
+            padding: 8px 12px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 12px;
+            transition: all 0.3s;
+        }
+        .test-btn:hover {
+            background: #2980b9;
+        }
+        .proxy-status {
+            margin-left: 10px;
+            font-size: 12px;
+        }
+        .proxy-status.success {
+            color: #27ae60;
+        }
+        .proxy-status.error {
+            color: #e74c3c;
+        }
+
+        /* Analytics */
+        .analytics-section {
+            background: white;
+            padding: 25px;
+            border-radius: 12px;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+        }
+        .activity-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 15px;
+        }
+        .activity-table th {
+            background: #ecf0f1;
+            padding: 15px;
+            text-align: left;
+            font-weight: 600;
+            color: #2c3e50;
+            border-bottom: 2px solid #bdc3c7;
+        }
+        .activity-table td {
+            padding: 15px;
+            border-bottom: 1px solid #ecf0f1;
+        }
+        .activity-table tr:hover {
+            background: #f8f9fa;
+        }
+        .status-badge {
+            display: inline-block;
+            padding: 5px 10px;
+            border-radius: 4px;
+            font-size: 12px;
+            font-weight: 600;
+        }
+        .status-processing {
+            background: #fff3cd;
+            color: #856404;
+        }
+        .status-completed {
+            background: #d4edda;
+            color: #155724;
+        }
+        .status-failed {
+            background: #f8d7da;
+            color: #721c24;
+        }
+        .status-pending {
+            background: #e2e3e5;
+            color: #383d41;
+        }
+        .no-data {
+            text-align: center;
+            padding: 40px;
+            color: #95a5a6;
+        }
+        .alert {
+            padding: 15px;
+            border-radius: 6px;
+            margin-bottom: 15px;
+        }
+        .alert-success {
+            background: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+        }
+        .alert-error {
+            background: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+        }
+        .alert-warning {
+            background: #fff3cd;
+            color: #856404;
+            border: 1px solid #ffeeba;
+        }
+    </style>
+</head>
+<body>
+    <div class="dashboard-container">
+        <div class="header">
+            <div>
+                <h1>Admin Dashboard</h1>
+                <p class="user-info">Welcome, {{ admin.email }}</p>
+            </div>
+            <button class="logout-btn" onclick="logout()">Logout</button>
+        </div>
+        
+        <!-- Tabs -->
+        <div class="tabs">
+            <button class="tab-btn active" onclick="switchTab('dashboard')">Dashboard</button>
+            <button class="tab-btn" onclick="switchTab('proxies')">Proxy Manager</button>
+            <button class="tab-btn" onclick="switchTab('analytics')">Live Tasks</button>
+            <button class="tab-btn" onclick="switchTab('logs')">System Logs</button>
+            <button class="tab-btn" onclick="switchTab('security')">Security</button>
+            <button class="tab-btn" onclick="switchTab('settings')">Settings</button>
+        </div>
+
+        <!-- Dashboard Tab -->
+        <div id="dashboard" class="tab-content active">
+            <div class="stats-grid">
+                <div class="stat-card">
+                    <h3>Total Tasks</h3>
+                    <div class="stat-value">{{ stats.total_tasks }}</div>
+                </div>
+                <div class="stat-card warning">
+                    <h3>Active Downloads</h3>
+                    <div class="stat-value">{{ stats.active_tasks }}</div>
+                </div>
+                <div class="stat-card success">
+                    <h3>Completed</h3>
+                    <div class="stat-value">{{ stats.completed_tasks }}</div>
+                </div>
+                <div class="stat-card danger">
+                    <h3>Failed</h3>
+                    <div class="stat-value">{{ stats.failed_tasks }}</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Proxy Manager Tab -->
+        <div id="proxies" class="tab-content">
+            <div class="proxy-section">
+                <h2 style="margin-bottom: 20px; color: #2c3e50;">Proxy Management</h2>
+                
+                <div id="alert-container"></div>
+                
+                <div class="proxy-form">
+                    <div class="form-group">
+                        <label for="proxyUrl">Proxy URL</label>
+                        <input type="text" id="proxyUrl" placeholder="http://user:pass@ip:port or http://ip:port">
+                    </div>
+                    <div class="form-group">
+                        <label for="proxyName">Proxy Name (Optional)</label>
+                        <input type="text" id="proxyName" placeholder="e.g., Server US-01">
+                    </div>
+                    <button class="add-btn" onclick="addProxy()">Add Proxy</button>
+                </div>
+
+                <h3 style="margin-top: 20px; margin-bottom: 15px; color: #2c3e50;">Active Proxies</h3>
+                <div class="proxy-list" id="proxyList">
+                    <div class="no-data">Loading proxies...</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Analytics Tab -->
+        <div id="analytics" class="tab-content">
+            <div class="analytics-section">
+                <h2 style="margin-bottom: 20px; color: #2c3e50;">Live Redis Tasks</h2>
+                <table class="activity-table">
+                    <thead>
+                        <tr>
+                            <th>Task ID</th>
+                            <th>URL</th>
+                            <th>Status</th>
+                            <th>Progress</th>
+                            <th>Created</th>
+                        </tr>
+                    </thead>
+                    <tbody id="analyticsBody">
+                        <tr>
+                            <td colspan="5" class="no-data">No tasks available</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- Logs Tab -->
+        <div id="logs" class="tab-content">
+            <div class="analytics-section">
+                <h2 style="margin-bottom: 20px; color: #2c3e50;">Supabase Download Logs & Errors</h2>
+                <p>These logs are stored persistently in your Supabase database.</p>
+                <table class="activity-table" style="margin-top: 20px;">
+                    <thead>
+                        <tr>
+                            <th>Date</th>
+                            <th>URL</th>
+                            <th>Status / Error</th>
+                            <th>IP Address</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr><td colspan="4" class="no-data">Logs will populate from Supabase.</td></tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- Security Tab -->
+        <div id="security" class="tab-content">
+            <div class="proxy-section">
+                <h2 style="margin-bottom: 20px; color: #2c3e50;">Security & IP Blocks</h2>
+                <div class="proxy-form">
+                    <div class="form-group">
+                        <label>Block IP / User Agent</label>
+                        <input type="text" placeholder="Enter IP or User Agent to block">
+                    </div>
+                    <button class="add-btn" style="background: #e74c3c;">Add Block</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Settings Tab -->
+        <div id="settings" class="tab-content">
+            <div class="analytics-section">
+                <h2 style="margin-bottom: 20px; color: #2c3e50;">System Settings & Rate Limits</h2>
+                
+                <div style="display: grid; gap: 20px;">
+                    <div class="form-group">
+                        <label>Max Downloads Per Hour (Rate Limit)</label>
+                        <input type="number" value="10" style="width: 200px;">
+                    </div>
+                    <div class="form-group">
+                        <label>yt-dlp Auto-update</label>
+                        <span style="color: #27ae60; font-weight: bold;">✅ Enabled (Runs every hour via cron_jobs.py)</span>
+                    </div>
+                     <div class="form-group">
+                        <label>Zero-Disk File Scrubbing</label>
+                        <span style="color: #27ae60; font-weight: bold;">✅ Enabled (Runs every 5 mins + aggressively after download)</span>
+                    </div>
+                </div>
+                <button class="add-btn" style="margin-top: 20px;">Save Settings</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Tab switching
+        function switchTab(tabName) {
+            const contents = document.querySelectorAll('.tab-content');
+            const buttons = document.querySelectorAll('.tab-btn');
+            
+            contents.forEach(c => c.classList.remove('active'));
+            buttons.forEach(b => b.classList.remove('active'));
+            
+            document.getElementById(tabName).classList.add('active');
+            event.target.classList.add('active');
+            
+            if (tabName === 'proxies') loadProxies();
+            if (tabName === 'analytics') loadAnalytics();
+        }
+
+        // Logout
+        function logout() {
+            if (confirm('Are you sure you want to logout?')) {
+                fetch('/admin/logout', { method: 'POST' })
+                    .then(() => window.location.href = '/admin/login');
+            }
+        }
+
+        // Add Proxy
+        function addProxy() {
+            const url = document.getElementById('proxyUrl').value.trim();
+            const name = document.getElementById('proxyName').value.trim();
+            
+            if (!url) {
+                showAlert('Please enter a proxy URL', 'error');
+                return;
+            }
+            
+            fetch('/admin/proxies/add', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ url, name })
+            })
+            .then(r => r.json())
+            .then(data => {
+                if (data.success) {
+                    showAlert('Proxy added successfully', 'success');
+                    document.getElementById('proxyUrl').value = '';
+                    document.getElementById('proxyName').value = '';
+                    loadProxies();
+                } else {
+                    showAlert(data.message || 'Failed to add proxy', 'error');
+                }
+            })
+            .catch(e => showAlert('Error: ' + e.message, 'error'));
+        }
+
+        // Load Proxies
+        function loadProxies() {
+            fetch('/admin/proxies/list')
+                .then(r => r.json())
+                .then(data => {
+                    const list = document.getElementById('proxyList');
+                    if (data.proxies && data.proxies.length > 0) {
+                        list.innerHTML = data.proxies.map(p => `
+                            <div class="proxy-item">
+                                <span class="proxy-url">${p}</span>
+                                <div class="proxy-actions">
+                                    <button class="test-btn" onclick="testProxy('${p}')">Test</button>
+                                    <button class="delete-btn" onclick="deleteProxy('${p}')">Delete</button>
+                                </div>
+                            </div>
+                        `).join('');
+                    } else {
+                        list.innerHTML = '<div class="no-data">No proxies configured. Add one above.</div>';
+                    }
+                })
+                .catch(e => console.error('Error loading proxies:', e));
+        }
+
+        // Delete Proxy
+        function deleteProxy(proxy) {
+            if (confirm('Delete this proxy?')) {
+                fetch('/admin/proxies/delete', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ proxy })
+                })
+                .then(r => r.json())
+                .then(data => {
+                    if (data.success) {
+                        showAlert('Proxy deleted', 'success');
+                        loadProxies();
+                    } else {
+                        showAlert('Failed to delete proxy', 'error');
+                    }
+                })
+                .catch(e => showAlert('Error: ' + e.message, 'error'));
+            }
+        }
+
+        // Test Proxy – call backend endpoint and display result
+        function testProxy(proxy) {
+            // show quick hint to user
+            showAlert('Testing proxy: ' + proxy, 'warning');
+
+            // find list item element for this proxy
+            const items = document.querySelectorAll('.proxy-item');
+            let statusElem = null;
+            items.forEach(item => {
+                const span = item.querySelector('.proxy-url');
+                if (span && span.textContent === proxy) {
+                    statusElem = item.querySelector('.proxy-status');
+                    if (!statusElem) {
+                        statusElem = document.createElement('span');
+                        statusElem.className = 'proxy-status';
+                        span.after(statusElem);
+                    }
+                }
+            });
+
+            fetch('/admin/proxies/test', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ proxy })
+            })
+            .then(r => r.json())
+            .then(data => {
+                if (data.success) {
+                    showAlert('Proxy is working ✅', 'success');
+                    if (statusElem) {
+                        statusElem.textContent = 'working';
+                        statusElem.classList.remove('error');
+                        statusElem.classList.add('success');
+                    }
+                } else {
+                    const msg = data.message || 'unknown';
+                    showAlert('Proxy failed: ' + msg, 'error');
+                    if (statusElem) {
+                        statusElem.textContent = 'failed';
+                        statusElem.classList.remove('success');
+                        statusElem.classList.add('error');
+                    }
+                }
+            })
+            .catch(e => {
+                showAlert('Error testing proxy: ' + e.message, 'error');
+                if (statusElem) {
+                    statusElem.textContent = 'error';
+                    statusElem.classList.remove('success');
+                    statusElem.classList.add('error');
+                }
+            });
+        }
+
+        // Load Analytics
+        function loadAnalytics() {
+            fetch('/api/v1/tasks')
+                .then(r => r.json())
+                .then(data => {
+                    const tbody = document.getElementById('analyticsBody');
+                    if (data.tasks && Object.keys(data.tasks).length > 0) {
+                        tbody.innerHTML = Object.values(data.tasks).map(t => `
+                            <tr>
+                                <td><small>${t.task_id.substring(0, 8)}...</small></td>
+                                <td><small>${(t.url || '').substring(0, 50)}...</small></td>
+                                <td><span class="status-badge status-${t.status}">${t.status}</span></td>
+                                <td>${t.progress || 0}%</td>
+                                <td><small>${t.created_at || 'N/A'}</small></td>
+                            </tr>
+                        `).join('');
+                    } else {
+                        tbody.innerHTML = '<tr><td colspan="5" class="no-data">No tasks</td></tr>';
+                    }
+                })
+                .catch(e => console.error('Error loading analytics:', e));
+        }
+
+        // Show Alert
+        function showAlert(message, type) {
+            const container = document.getElementById('alert-container');
+            const alert = document.createElement('div');
+            alert.className = `alert alert-${type}`;
+            alert.textContent = message;
+            container.appendChild(alert);
+            setTimeout(() => alert.remove(), 4000);
+        }
+
+        // Initial load
+        loadProxies();
+    </script>
+</body>
+</html>

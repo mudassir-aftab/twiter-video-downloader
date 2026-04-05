@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{ page.title | default('Page') }}</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="/static/cms-public.css">
+</head>
+<body class="{% if (page.get('meta') or {}).get('shell', True) %}cms-pub-shell{% else %}cms-pub-bare{% endif %}">
+{% set meta = page.get('meta') or {} %}
+{% if meta.get('shell', True) %}
+    <header class="cms-pub-header">
+        <a href="/" class="cms-pub-logo">
+            <span class="cms-pub-logo-mark" aria-hidden="true"></span>
+            <span class="cms-pub-logo-text">{{ page.title | default('Site') }}</span>
+        </a>
+        <nav class="cms-pub-nav" aria-label="Primary">
+            <a href="/">Home</a>
+        </nav>
+    </header>
+    <main class="cms-pub-main">
+        <article class="cms-pub-card">
+            <div id="cms-root"></div>
+        </article>
+    </main>
+    <footer class="cms-pub-footer">
+        <div class="cms-pub-footer-inner">
+            <div class="cms-pub-footer-brand">
+                <span class="cms-pub-logo-mark cms-pub-logo-mark--sm" aria-hidden="true"></span>
+                <p class="cms-pub-disclaimer">Independent tool — not affiliated with X Corp. or Twitter.</p>
+            </div>
+            <div class="cms-pub-footer-cols">
+                <div>
+                    <h4>Legal</h4>
+                    <a href="/p/privacy-policy">Privacy</a>
+                    <a href="/p/terms">Terms</a>
+                </div>
+                <div>
+                    <h4>Quick links</h4>
+                    <a href="/">Download</a>
+                    <a href="/admin/cms">Admin</a>
+                </div>
+            </div>
+        </div>
+        <p class="cms-pub-copy">Published with the site CMS</p>
+    </footer>
+{% else %}
+    <div id="cms-root"></div>
+{% endif %}
+    <script id="cms-bootstrap" type="application/json">{{ page_json | safe }}</script>
+    <script src="/static/cms-block-registry.js"></script>
+    <script src="/static/cms-public-renderer.js"></script>
+</body>
+</html>

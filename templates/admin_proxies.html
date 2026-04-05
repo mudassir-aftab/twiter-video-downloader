@@ -1,0 +1,437 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Manage Proxies | Admin Dashboard</title>
+    <!-- Google Fonts: Inter & Outfit -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Outfit:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <!-- Font Awesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        :root {
+            --primary: #3b82f6;
+            --primary-hover: #2563eb;
+            --bg-dark: #0f172a;
+            --bg-card: #1e293b;
+            --text-main: #f8fafc;
+            --text-dim: #94a3b8;
+            --border: #334155;
+            --success: #10b981;
+            --danger: #ef4444;
+            --warning: #f59e0b;
+            --sidebar-width: 260px;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Inter', sans-serif;
+        }
+
+        body {
+            background-color: var(--bg-dark);
+            color: var(--text-main);
+            overflow-x: hidden;
+            display: flex;
+        }
+
+        /* --- Sidebar --- */
+        #sidebar {
+            position: fixed;
+            left: 0;
+            top: 0;
+            bottom: 0;
+            width: var(--sidebar-width);
+            background: var(--bg-card);
+            border-right: 1px solid var(--border);
+            z-index: 100;
+        }
+
+        .sidebar-brand {
+            padding: 2rem 1.5rem;
+            font-family: 'Outfit', sans-serif;
+            font-size: 1.25rem;
+            font-weight: 700;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .sidebar-menu {
+            list-style: none;
+            padding: 0 1rem;
+        }
+
+        .menu-item {
+            padding: 0.75rem 1rem;
+            margin-bottom: 0.5rem;
+            border-radius: 0.75rem;
+            cursor: pointer;
+            transition: all 0.2s;
+            color: var(--text-dim);
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            text-decoration: none;
+        }
+
+        .menu-item:hover, .menu-item.active {
+            color: white;
+            background: var(--primary);
+        }
+
+        .menu-item i {
+            font-size: 1.1rem;
+            width: 20px;
+        }
+
+        /* --- Main Content --- */
+        #main-content {
+            margin-left: var(--sidebar-width);
+            flex: 1;
+            padding: 2rem;
+            min-height: 100vh;
+        }
+
+        .top-nav {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 2.5rem;
+        }
+
+        .nav-title h1 {
+            font-family: 'Outfit', sans-serif;
+            font-size: 1.75rem;
+            margin-bottom: 0.25rem;
+        }
+
+        .nav-title p {
+            color: var(--text-dim);
+            font-size: 0.875rem;
+        }
+
+        .nav-actions {
+            display: flex;
+            gap: 1rem;
+        }
+
+        /* --- Buttons --- */
+        .btn {
+            padding: 0.625rem 1.25rem;
+            border-radius: 0.75rem;
+            font-weight: 600;
+            cursor: pointer;
+            border: none;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            transition: all 0.2s;
+            font-size: 0.875rem;
+        }
+
+        .btn-primary { background: var(--primary); color: white; }
+        .btn-primary:hover { background: var(--primary-hover); transform: translateY(-2px); }
+        
+        .btn-outline { background: transparent; border: 1px solid var(--border); color: var(--text-main); }
+        .btn-outline:hover { background: rgba(255,255,255,0.05); }
+
+        /* --- Card & Table --- */
+        .card {
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: 1.25rem;
+            overflow: hidden;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+        }
+
+        .card-header {
+            padding: 1.5rem;
+            border-bottom: 1px solid var(--border);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .table-responsive {
+            width: 100%;
+            overflow-x: auto;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            text-align: left;
+        }
+
+        th {
+            padding: 1rem 1.5rem;
+            background: rgba(0,0,0,0.2);
+            color: var(--text-dim);
+            font-weight: 600;
+            font-size: 0.75rem;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+        }
+
+        td {
+            padding: 1.25rem 1.5rem;
+            border-bottom: 1px solid var(--border);
+            font-size: 0.875rem;
+        }
+
+        tr:last-child td { border-bottom: none; }
+        tr:hover td { background: rgba(255,255,255,0.02); }
+
+        /* --- Badges --- */
+        .badge {
+            padding: 0.25rem 0.75rem;
+            border-radius: 9999px;
+            font-size: 0.75rem;
+            font-weight: 600;
+            text-transform: capitalize;
+        }
+
+        .badge-active { background: rgba(16, 185, 129, 0.1); color: var(--success); }
+        .badge-dead { background: rgba(239, 68, 68, 0.1); color: var(--danger); }
+        .badge-warning { background: rgba(245, 158, 11, 0.1); color: var(--warning); }
+
+        /* --- Stats Mini --- */
+        .mini-stat {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+        .mini-stat-val { font-weight: 700; color: white; }
+        .mini-stat-label { font-size: 0.75rem; color: var(--text-dim); }
+
+        /* --- Toast --- */
+        #toast {
+            position: fixed;
+            bottom: 2rem;
+            right: 2rem;
+            padding: 1rem 2rem;
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: 1rem;
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+            z-index: 1000;
+            display: none;
+            animation: slideIn 0.3s ease-out;
+        }
+
+        @keyframes slideIn { from { transform: translateX(100%); } to { transform: translateX(0); } }
+
+        /* Mobile Adjustments */
+        @media (max-width: 768px) {
+            #sidebar { display: none; }
+            #main-content { margin-left: 0; padding: 1.5rem; }
+        }
+    </style>
+</head>
+<body>
+
+    <!-- Sidebar -->
+    <nav id="sidebar">
+        <div class="sidebar-brand">
+            <i class="fab fa-twitter" style="color: var(--primary); font-size: 1.5rem;"></i>
+            <span>Proxy Manager</span>
+        </div>
+        <ul class="sidebar-menu">
+            <li>
+                <a href="/admin/dashboard" class="menu-item">
+                    <i class="fas fa-chart-line"></i>
+                    <span>Dashboard</span>
+                </a>
+            </li>
+            <li>
+                <a href="/admin/proxies" class="menu-item active">
+                    <i class="fas fa-server"></i>
+                    <span>Proxies</span>
+                </a>
+            </li>
+            <li>
+                <a href="#" class="menu-item" onclick="logout()">
+                    <i class="fas fa-sign-out-alt"></i>
+                    <span>Logout</span>
+                </a>
+            </li>
+        </ul>
+    </nav>
+
+    <!-- Main Content -->
+    <main id="main-content">
+        <div class="top-nav">
+            <div class="nav-title">
+                <h1>Proxy Infrastructure</h1>
+                <p id="last-updated">Real-time status of your active static proxies</p>
+            </div>
+            <div class="nav-actions">
+                <button class="btn btn-outline" onclick="fetchProxies()">
+                    <i class="fas fa-sync-alt" id="refresh-icon"></i>
+                    Refresh
+                </button>
+                <button class="btn btn-primary" onclick="testAllProxies()">
+                    <i class="fas fa-vial"></i>
+                    Test All
+                </button>
+            </div>
+        </div>
+
+        <div class="card">
+            <div class="card-header">
+                <div class="mini-stat">
+                    <div class="mini-stat-val" id="total-count">0</div>
+                    <div class="mini-stat-label">Total Proxies</div>
+                </div>
+                <div style="color: var(--text-dim); font-size: 0.875rem;">
+                    <i class="fas fa-shield-alt"></i> Secure SaaS Environment
+                </div>
+            </div>
+            <div class="table-responsive">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Location</th>
+                            <th>Host : Port</th>
+                            <th>Provider</th>
+                            <th>Status</th>
+                            <th>Success / Fail</th>
+                            <th>Avg Latency</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody id="proxy-table-body">
+                        <!-- Loaded via JS -->
+                        <tr>
+                            <td colspan="7" style="text-align: center; padding: 4rem; color: var(--text-dim);">
+                                <i class="fas fa-spinner fa-spin" style="font-size: 2rem; margin-bottom: 1rem;"></i>
+                                <p>Checking proxies status...</p>
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </main>
+
+    <div id="toast"></div>
+
+    <script>
+        const API_BASE = '/api/admin';
+        
+        async function fetchProxies() {
+            const token = localStorage.getItem('admin_token');
+            if (!token) {
+                window.location.href = '/admin/login';
+                return;
+            }
+
+            const refreshIcon = document.getElementById('refresh-icon');
+            refreshIcon.classList.add('fa-spin');
+
+            try {
+                const res = await fetch(`${API_BASE}/proxies`, {
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+                const data = await res.json();
+                
+                if (data.success) {
+                    renderTable(data.proxies);
+                    document.getElementById('total-count').innerText = data.proxies.length;
+                } else {
+                    showToast('Failed to load proxies: ' + data.message, 'danger');
+                }
+            } catch (err) {
+                showToast('Network error: ' + err.message, 'danger');
+            } finally {
+                refreshIcon.classList.remove('fa-spin');
+            }
+        }
+
+        function renderTable(proxies) {
+            const tbody = document.getElementById('proxy-table-body');
+            if (proxies.length === 0) {
+                tbody.innerHTML = `<tr><td colspan="7" style="text-align:center; padding:3rem; color:var(--text-dim)">No proxies found in database.</td></tr>`;
+                return;
+            }
+
+            tbody.innerHTML = proxies.map(p => {
+                const statusClass = p.status === 'active' ? 'badge-active' : (p.status === 'dead' ? 'badge-dead' : 'badge-warning');
+                return `
+                <tr>
+                    <td>
+                        <div style="font-weight: 600; color: white;">${p.country || 'N/A'}</div>
+                        <div style="font-size: 0.75rem; color: var(--text-dim);">${p.city || 'Global'}</div>
+                    </td>
+                    <td>
+                        <code style="background: rgba(0,0,0,0.2); padding: 4px 8px; border-radius: 6px;">${p.host}:${p.port}</code>
+                    </td>
+                    <td style="color: var(--text-dim); font-size: 0.75rem;">${p.provider_name || 'STATIC'}</td>
+                    <td><span class="badge ${statusClass}">${p.status || 'Active'}</span></td>
+                    <td>
+                        <i class="fas fa-check-circle" style="color: var(--success); margin-right: 4px;"></i> ${p.success_count || 0}
+                        <span style="margin: 0 8px; color: var(--border);">|</span>
+                        <i class="fas fa-times-circle" style="color: var(--danger); margin-right: 4px;"></i> ${p.fail_count || 0}
+                    </td>
+                    <td>
+                        <div class="mini-stat">
+                            <i class="fas fa-bolt" style="color: var(--warning);"></i>
+                            <span>${Math.round(p.avg_response_time) || 0}ms</span>
+                        </div>
+                    </td>
+                    <td>
+                        <button class="btn btn-outline" style="padding: 0.4rem 0.8rem; font-size: 0.75rem;" onclick="testProxy('${p.id}')">
+                            Test
+                        </button>
+                    </td>
+                </tr>
+                `;
+            }).join('');
+        }
+
+        async function testProxy(id) {
+            const token = localStorage.getItem('admin_token');
+            showToast('Testing proxy speed...', 'info');
+            
+            try {
+                const res = await fetch(`${API_BASE}/proxies/test`, {
+                    method: 'POST',
+                    headers: { 
+                        'Authorization': `Bearer ${token}`,
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ proxy_id: id })
+                });
+                const data = await res.json();
+                if (data.success && data.result.success) {
+                    showToast(`✅ Success: ${data.result.latency} latency.`, 'success');
+                    fetchProxies();
+                } else {
+                    showToast(`❌ Failed: ${data.result.error || 'Timeout'}`, 'danger');
+                }
+            } catch (err) {
+                showToast('Test failed: ' + err.message, 'danger');
+            }
+        }
+
+        async function logout() {
+            localStorage.removeItem('admin_token');
+            window.location.href = '/admin/login';
+        }
+
+        function showToast(msg, type) {
+            const toast = document.getElementById('toast');
+            toast.innerText = msg;
+            toast.style.display = 'block';
+            toast.style.borderLeft = `4px solid var(--${type === 'success' ? 'success' : (type === 'danger' ? 'danger' : 'primary')})`;
+            setTimeout(() => { toast.style.display = 'none'; }, 4000);
+        }
+
+        // Init
+        document.addEventListener('DOMContentLoaded', fetchProxies);
+    </script>
+</body>
+</html>

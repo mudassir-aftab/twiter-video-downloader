@@ -1,0 +1,236 @@
+/* Published CMS pages: /p/{slug} and /pages/{slug} */
+
+* {
+    box-sizing: border-box;
+}
+
+body {
+    margin: 0;
+    font-family: "Inter", system-ui, sans-serif;
+    line-height: 1.6;
+    min-height: 100vh;
+}
+
+#cms-root {
+    min-height: 0;
+}
+
+.cms-node img {
+    max-width: 100%;
+    height: auto;
+}
+
+/* --- Bare (blocks only, dark canvas) --- */
+body.cms-pub-bare {
+    background: #0f172a;
+    color: #e2e8f0;
+}
+
+body.cms-pub-bare #cms-root {
+    min-height: 100vh;
+}
+
+/* --- Light marketing shell (About-style) --- */
+body.cms-pub-shell {
+    background: #f1f5f9;
+    color: #0f172a;
+}
+
+.cms-pub-header {
+    max-width: 1100px;
+    margin: 0 auto;
+    padding: 20px 24px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 16px;
+}
+
+.cms-pub-logo {
+    display: inline-flex;
+    align-items: center;
+    gap: 10px;
+    text-decoration: none;
+    color: #0f172a;
+    font-weight: 800;
+    font-size: 1.15rem;
+    letter-spacing: -0.02em;
+}
+
+.cms-pub-logo-mark {
+    width: 32px;
+    height: 32px;
+    border-radius: 8px;
+    background: linear-gradient(135deg, #2563eb, #4f46e5);
+    transform: rotate(45deg) scale(0.65);
+    flex-shrink: 0;
+}
+
+.cms-pub-logo-mark--sm {
+    width: 24px;
+    height: 24px;
+}
+
+.cms-pub-nav {
+    display: flex;
+    gap: 20px;
+    font-size: 0.9rem;
+    font-weight: 500;
+}
+
+.cms-pub-nav a {
+    color: #475569;
+    text-decoration: none;
+}
+
+.cms-pub-nav a:hover {
+    color: #2563eb;
+}
+
+.cms-pub-main {
+    max-width: 1100px;
+    margin: 0 auto;
+    padding: 0 24px 48px;
+}
+
+.cms-pub-card {
+    background: #fff;
+    border-radius: 16px;
+    border: 1px solid rgba(148, 163, 184, 0.25);
+    box-shadow: 0 1px 3px rgba(15, 23, 42, 0.06);
+    padding: 40px 48px;
+}
+
+@media (max-width: 640px) {
+    .cms-pub-card {
+        padding: 28px 20px;
+    }
+}
+
+.cms-pub-footer {
+    margin-top: auto;
+    padding: 48px 24px 24px;
+    border-top: 1px solid rgba(148, 163, 184, 0.25);
+    background: #e2e8f0;
+}
+
+.cms-pub-footer-inner {
+    max-width: 1100px;
+    margin: 0 auto;
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 32px;
+}
+
+@media (max-width: 720px) {
+    .cms-pub-footer-inner {
+        grid-template-columns: 1fr;
+    }
+}
+
+.cms-pub-footer-brand {
+    max-width: 320px;
+}
+
+.cms-pub-disclaimer {
+    margin: 12px 0 0;
+    font-size: 0.8rem;
+    color: #64748b;
+    line-height: 1.5;
+}
+
+.cms-pub-footer-cols {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 24px;
+}
+
+.cms-pub-footer-cols h4 {
+    margin: 0 0 12px;
+    font-size: 0.75rem;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    color: #64748b;
+}
+
+.cms-pub-footer-cols a {
+    display: block;
+    color: #334155;
+    text-decoration: none;
+    font-size: 0.9rem;
+    margin-bottom: 8px;
+}
+
+.cms-pub-footer-cols a:hover {
+    color: #2563eb;
+}
+
+.cms-pub-copy {
+    max-width: 1100px;
+    margin: 24px auto 0;
+    padding-top: 16px;
+    border-top: 1px solid rgba(148, 163, 184, 0.35);
+    font-size: 0.75rem;
+    color: #94a3b8;
+    text-align: center;
+}
+
+/* Rich text block inside shell (readable typography) */
+body.cms-pub-shell .cms-richtext {
+    font-size: 1.05rem;
+    color: #334155;
+}
+
+body.cms-pub-shell .cms-richtext h1 {
+    font-size: 2rem;
+    font-weight: 800;
+    letter-spacing: -0.03em;
+    margin: 0 0 16px;
+    color: #0f172a;
+}
+
+body.cms-pub-shell .cms-richtext h2 {
+    font-size: 1.35rem;
+    font-weight: 700;
+    margin: 28px 0 12px;
+    color: #0f172a;
+}
+
+body.cms-pub-shell .cms-richtext p {
+    margin: 0 0 16px;
+}
+
+body.cms-pub-shell .cms-richtext ul {
+    margin: 0 0 16px;
+    padding-left: 1.25rem;
+}
+
+body.cms-pub-shell .cms-richtext li {
+    margin-bottom: 8px;
+}
+
+body.cms-pub-shell .cms-richtext a {
+    color: #2563eb;
+    text-decoration: underline;
+    text-underline-offset: 2px;
+}
+
+body.cms-pub-shell .cms-richtext .cms-article-meta {
+    font-size: 0.9rem;
+    color: #64748b;
+    margin-bottom: 20px;
+}
+
+/* Bare mode: richtext inherits dark theme */
+body.cms-pub-bare .cms-richtext {
+    color: #cbd5e1;
+}
+
+body.cms-pub-bare .cms-richtext h1,
+body.cms-pub-bare .cms-richtext h2 {
+    color: #f8fafc;
+}
+
+body.cms-pub-bare .cms-richtext a {
+    color: #93c5fd;
+}
