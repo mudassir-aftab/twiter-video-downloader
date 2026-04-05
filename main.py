@@ -148,7 +148,7 @@ async def startup_event():
     Path(__file__).parent.joinpath("temp").mkdir(exist_ok=True)
 
     # 🔥 START WORKER IN BACKGROUND
-    asyncio.create_task(run_worker())
+    # asyncio.create_task(run_worker())
     
     # 🔥 START CRON JOBS
     start_cron_jobs(app)
