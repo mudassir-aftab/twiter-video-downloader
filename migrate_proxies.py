@@ -8,19 +8,17 @@ from database import get_supabase, add_advanced_proxy
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
-# 1. Hardcoded 10 Proxies List
 new_proxies = [
-      {"host": "31.59.20.176", "port": 6754, "username": "atjoplnk", "password": "g5so8c2amqv1"},
-      {"host": "23.95.150.145", "port": 6114, "username": "atjoplnk", "password": "g5so8c2amqv1"},
-      {"host": "198.23.239.134", "port": 6540, "username": "atjoplnk", "password": "g5so8c2amqv1"},
-      {"host": "45.38.107.97", "port": 6014, "username": "atjoplnk", "password": "g5so8c2amqv1"},
-      {"host": "107.172.163.27", "port": 6543, "username": "atjoplnk", "password": "g5so8c2amqv1"},
-      {"host": "198.105.121.200", "port": 6462, "username": "atjoplnk", "password": "g5so8c2amqv1"},
-      {"host": "216.10.27.159", "port": 6837, "username": "atjoplnk", "password": "g5so8c2amqv1"},
-      {"host": "142.111.67.146", "port": 5611, "username": "atjoplnk", "password": "g5so8c2amqv1"},
-      {"host": "191.96.254.138", "port": 6185, "username": "atjoplnk", "password": "g5so8c2amqv1"},
-      {"host": "31.58.9.4", "port": 6077, "username": "atjoplnk", "password": "g5so8c2amqv1"},
-      
+    {"host": "31.59.20.176", "port": 6754, "username": "atjoplnk", "password": "g5so8c2amqv1"},
+    {"host": "198.23.239.134", "port": 6540, "username": "atjoplnk", "password": "g5so8c2amqv1"},
+    {"host": "45.38.107.97", "port": 6014, "username": "atjoplnk", "password": "g5so8c2amqv1"},
+    {"host": "107.172.163.27", "port": 6543, "username": "atjoplnk", "password": "g5so8c2amqv1"},
+    {"host": "198.105.121.200", "port": 6462, "username": "atjoplnk", "password": "g5so8c2amqv1"},
+    {"host": "216.10.27.159", "port": 6837, "username": "atjoplnk", "password": "g5so8c2amqv1"},
+    {"host": "142.111.67.146", "port": 5611, "username": "atjoplnk", "password": "g5so8c2amqv1"},
+    {"host": "191.96.254.138", "port": 6185, "username": "atjoplnk", "password": "g5so8c2amqv1"},
+    {"host": "31.58.9.4", "port": 6077, "username": "atjoplnk", "password": "g5so8c2amqv1"},
+    {"host": "23.26.71.145", "port": 5628, "username": "atjoplnk", "password": "g5so8c2amqv1"},
 ]
 
 

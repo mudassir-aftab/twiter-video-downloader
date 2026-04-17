@@ -126,13 +126,34 @@ def init_background_jobs():
     # Cron jobs
     start_cron_jobs(app)
 
+# @app.on_event("startup")
+# async def startup_event():
+#     logger.info("🚀 Starting FastAPI system...")
+
+#     try:
+#         await init_services()  
+#         init_directories()
+#         init_background_jobs()
+
+#         logger.info("✅ System fully started")
+
+#     except Exception as e:
+#         logger.error(f"❌ Startup failed: {e}")
+#         raise
+
+
 @app.on_event("startup")
 async def startup_event():
     logger.info("🚀 Starting FastAPI system...")
 
     try:
-        await init_services()  
+        # pehle folders banao
         init_directories()
+
+        # background me services start karo (block mat karo)
+        asyncio.create_task(init_services())
+
+        # worker + cron jobs
         init_background_jobs()
 
         logger.info("✅ System fully started")
