@@ -39,18 +39,13 @@ def get_all_proxies():
 
 
 def get_working_proxies():
-    """
-    FIXED:
-    - supports active + slow proxies
-    - excludes dead/banned safely
-    """
     try:
         res = get_supabase().table("proxies").select("*").execute()
         proxies = res.data or []
 
         return [
             p for p in proxies
-            if p.get("status", "").lower() not in ["dead", "banned"]
+            if p.get("status", "").lower() in ["active", "slow"]
         ]
 
     except Exception as e:
