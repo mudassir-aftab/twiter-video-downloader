@@ -553,7 +553,19 @@ async def download_file(task_id: str, background_tasks: BackgroundTasks):
             file_path = Path(stored_path)
         else:
             # Fallback: reconstruct from filename
-            file_path = Path(__file__).parent / "downloads" / filename
+            # file_path = Path(__file__).parent / "downloads" / filename
+            # file_path = Path(__file__).parent / "downloads" / filename
+            BASE_DIR = Path(__file__).parent
+
+            possible_paths = [
+            Path(task_state.get("file_path", "")),   # worker path
+            BASE_DIR / "downloads" / filename,       # fallback
+            ]
+
+            file_path = next((p for p in possible_paths if p.exists()), None)
+
+            if not file_path:
+                raise HTTPException(status_code=404, detail="Download file not found")
 
         if not file_path.exists():
             logger.error(f"File not found: {file_path}")

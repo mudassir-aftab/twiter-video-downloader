@@ -4,6 +4,7 @@ import os
 from dotenv import load_dotenv
 from pydantic_settings import BaseSettings
 import logging
+from pathlib import Path
 
 # Load environment variables from .env file
 load_dotenv()
@@ -11,11 +12,16 @@ load_dotenv()
 logger = logging.getLogger(__name__)
 
 
+BASE_DIR = Path(os.getenv("RAILWAY_VOLUME_MOUNT_PATH", Path(__file__).resolve().parent))
+
+
+
 class Settings(BaseSettings):
     """Application settings from environment variables"""
 
-    temp_dir: str = "temp"
-    downloads_dir: str = "downloads"
+    
+    downloads_dir: str = str(BASE_DIR / "downloads")
+    temp_dir: str = str(BASE_DIR / "temp")
 
     # Redis Configuration
     redis_host: str = "localhost"
