@@ -175,10 +175,20 @@ class TwitterDownloader:
                 # downloads_dir.mkdir(parents=True, exist_ok=True)
 
                 # dest_path = downloads_dir / Path(final_file).name
-                BASE_DIR = Path(__file__).parent
-                downloads_dir = BASE_DIR / "downloads"
-                downloads_dir.mkdir(parents=True, exist_ok=True)
+                
+                
+                
+                
+                
+                # BASE_DIR = Path(__file__).parent
+                # downloads_dir = BASE_DIR / "downloads"
+                # downloads_dir.mkdir(parents=True, exist_ok=True)
 
+                # dest_path = downloads_dir / Path(final_file).name
+                
+                from config import DOWNLOADS_DIR
+
+                downloads_dir = DOWNLOADS_DIR
                 dest_path = downloads_dir / Path(final_file).name
                 
 

@@ -59,7 +59,7 @@ from database import (
     is_blocked,
 )
 from cron_jobs import start_cron_jobs
-
+from config import DOWNLOADS_DIR
 # Configure logging
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
@@ -555,11 +555,11 @@ async def download_file(task_id: str, background_tasks: BackgroundTasks):
             # Fallback: reconstruct from filename
             # file_path = Path(__file__).parent / "downloads" / filename
             # file_path = Path(__file__).parent / "downloads" / filename
-            BASE_DIR = Path(__file__).parent
+            # BASE_DIR = Path(__file__).parent
 
             possible_paths = [
             Path(task_state.get("file_path", "")),   # worker path
-            BASE_DIR / "downloads" / filename,       # fallback
+            DOWNLOADS_DIR / filename,    # fallback
             ]
 
             file_path = next((p for p in possible_paths if p.exists()), None)

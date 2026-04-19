@@ -11,8 +11,10 @@ load_dotenv()
 
 logger = logging.getLogger(__name__)
 
+BASE_DIR = Path(os.getenv("RAILWAY_VOLUME_MOUNT_PATH", "/data"))
 
-BASE_DIR = Path(os.getenv("RAILWAY_VOLUME_MOUNT_PATH", Path(__file__).resolve().parent))
+DOWNLOADS_DIR = BASE_DIR / "downloads"
+DOWNLOADS_DIR.mkdir(parents=True, exist_ok=True)
 
 
 
